@@ -6,6 +6,8 @@ import restaurantRoutes from "./routes/restaurant.routes";
 import categoryRoutes from "./routes/category.routes";
 import foodItemRoutes from "./routes/food-item.routes";
 import tableRoutes from "./routes/table.routes";
+import qrRoutes from "./routes/qr.routes";
+import orderRoutes from "./routes/order.routes";
 
 import { connectDB } from "./config/database";
 dotenv.config();
@@ -31,6 +33,8 @@ app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/food-items", foodItemRoutes);
 app.use("/api/tables", tableRoutes);
+app.use("/api/qr", qrRoutes);
+app.use("/api/orders", orderRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

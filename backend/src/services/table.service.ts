@@ -2,6 +2,13 @@ import { Table } from "../models/Table";
 import { Restaurant } from "../models/Restaurant";
 import { CreateTableInput } from "../validators/table.validator";
 
+
+const generateTableCode = () => {
+  return `tbl_${Math.random()
+    .toString(36)
+    .substring(2, 8)}`;
+};
+
 export const createTable = async (
   data: CreateTableInput,
   userId: string
@@ -27,11 +34,13 @@ export const createTable = async (
   const table = await Table.create({
     ...data,
     name: `Table ${data.tableNumber}`,
+    tableCode: generateTableCode(),
   });
 
   return {
     id: table._id.toString(),
     tableNumber: table.tableNumber,
+    tableCode: table.tableCode,
     name: table.name,
     isActive: table.isActive,
   };
@@ -59,6 +68,7 @@ export const getTablesByRestaurant = async (
   return tables.map((table) => ({
     id: table._id.toString(),
     tableNumber: table.tableNumber,
+    tableCode: table.tableCode,
     name: table.name,
     qrCodeUrl: table.qrCodeUrl,
     isActive: table.isActive,
@@ -95,6 +105,7 @@ export const updateTable = async (
   return {
     id: table._id.toString(),
     tableNumber: table.tableNumber,
+    tableCode: table.tableCode,
     name: table.name,
     isActive: table.isActive,
   };

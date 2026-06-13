@@ -4,6 +4,7 @@ export interface ITable extends Document {
   restaurantId: mongoose.Types.ObjectId;
   name: string;
   tableNumber: number;
+  tableCode: string;
   qrCodeUrl: string;
   isActive: boolean;
   createdAt: Date;
@@ -27,6 +28,13 @@ const tableSchema = new mongoose.Schema<ITable>(
     tableNumber: {
       type: Number,
       required: true,
+    },
+
+    tableCode: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
     },
 
     qrCodeUrl: {
