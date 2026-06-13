@@ -25,3 +25,32 @@ export const createCategory = async (
     isActive: category.isActive,
   };
 };
+
+export const getCategoriesByRestaurant = async (
+  restaurantId: string,
+  userId: string
+) => {
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    createdBy: userId,
+  });
+
+  if (!restaurant) {
+    throw new Error("Restaurant not found");
+  }
+
+  const categories = await Category.find({
+    restaurantId,
+  }).sort({
+    sortOrder: 1,
+    createdAt: 1,
+  });
+
+  return categories.map((category) => ({
+    id: category._id.toString(),
+    name: category.name,
+    description: category.description,
+    sortOrder: category.sortOrder,
+    isActive: category.isActive,
+  }));
+};

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { createCategorySchema } from "../validators/category.validator";
-import { createCategory } from "../services/category.service";
+import { createCategory, getCategoriesByRestaurant } from "../services/category.service";
 
 export const create = async (
   req: Request,
@@ -22,6 +22,34 @@ export const create = async (
       success: true,
       message: "Category created successfully",
       data: category,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+    });
+  }
+};
+
+export const getByRestaurant = async (
+  req: Request<{ restaurantId: string }>,
+  res: Response
+) => {
+  try {
+    const user = (req as any).user;
+
+    const categories =
+      await getCategoriesByRestaurant(
+        req.params.restaurantId,
+        user._id.toString()
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: categories,
     });
   } catch (error) {
     return res.status(400).json({
