@@ -1,12 +1,8 @@
 import { Request, Response } from "express";
 
-import { registerSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema } from "../validators/auth.validator";
 
-import { registerUser } from "../services/auth.service";
-
-import { loginSchema } from "../validators/auth.validator";
-
-import { loginUser } from "../services/auth.service";
+import { registerUser,  loginUser } from "../services/auth.service";
 
 export const register = async (
   req: Request,
@@ -58,6 +54,30 @@ export const login = async (
         error instanceof Error
           ? error.message
           : "Unknown error",
+    });
+  }
+};
+
+export const getProfile = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const user = (req as any).user;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
     });
   }
 };
