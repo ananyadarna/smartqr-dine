@@ -3,6 +3,7 @@ import { Table } from "../models/Table";
 import { FoodItem } from "../models/FoodItem";
 import { Restaurant } from "../models/Restaurant";
 import { CreateOrderInput } from "../validators/order.validator";
+import { getIO} from "../sockets";
 
 const generateOrderNumber = () => {
     return `ORD-${Date.now()}`
@@ -79,6 +80,22 @@ export const createOrder = async (
       status: "pending",
     });
 
+    // Emit real-time event to restaurant dashboard
+    const io = getIO();
+
+    io.to(data.restaurantId).emit(
+    "new_order",
+    {
+        orderId: order._id.toString(),
+        orderNumber: order.orderNumber,
+        tableNumber: order.tableNumber,
+        tableName: order.tableName,
+        totalAmount: order.totalAmount,
+        status: order.status,
+    }
+    );
+
+
   return {
     id: order._id.toString(),
     orderNumber:
@@ -132,6 +149,20 @@ export const updateOrderStatus = async (
   order.status = status;
 
   await order.save();
+
+  // Emit real-time event to restaurant dashboard
+  const io = getIO();
+
+  io.to(
+    order.restaurantId.toString()
+  ).emit(
+    "order_status_updated",
+    {
+        orderId: order._id.toString(),
+        orderNumber: order.orderNumber,
+        status: order.status,
+    }
+ );
 
   return {
     id: order._id.toString(),

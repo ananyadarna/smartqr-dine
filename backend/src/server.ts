@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import http from "http";
+
+import { initializeSocket } from "./sockets";
 import authRoutes from "./routes/auth.routes";
 import restaurantRoutes from "./routes/restaurant.routes";
 import categoryRoutes from "./routes/category.routes";
@@ -8,6 +11,7 @@ import foodItemRoutes from "./routes/food-item.routes";
 import tableRoutes from "./routes/table.routes";
 import qrRoutes from "./routes/qr.routes";
 import orderRoutes from "./routes/order.routes";
+import publicRoutes from "./routes/public.routes";
 
 import { connectDB } from "./config/database";
 dotenv.config();
@@ -35,7 +39,11 @@ app.use("/api/food-items", foodItemRoutes);
 app.use("/api/tables", tableRoutes);
 app.use("/api/qr", qrRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/public", publicRoutes);
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+initializeSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
