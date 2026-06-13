@@ -9,6 +9,11 @@ interface RegisterInput {
   password: string;
 }
 
+interface LoginInput {
+  email: string;
+  password: string;
+}
+
 export const registerUser = async ({
   name,
   email,
@@ -46,6 +51,42 @@ export const registerUser = async ({
 
   return {
     user: userResponse,
+    token,
+  };
+};
+
+export const loginUser = async ({
+  email,
+  password,
+}: LoginInput) => {
+  const user = await User.findOne({
+    email,
+  }).select("+password");
+
+  if (!user) {
+    throw new Error("Invalid email or password");
+  }
+
+  const isPasswordValid = await bcrypt.compare(
+    password,
+    user.password
+  );
+
+  if (!isPasswordValid) {
+    throw new Error("Invalid email or password");
+  }
+
+  const token = generateToken(
+    user._id.toString()
+  );
+
+  return {
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
     token,
   };
 };
