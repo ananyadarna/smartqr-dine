@@ -85,3 +85,33 @@ export const getRestaurantById = async (
     isPublished: restaurant.isPublished,
   };
 };
+
+export const updateRestaurant = async (
+  restaurantId: string,
+  userId: string,
+  data: Partial<CreateRestaurantInput>
+) => {
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    createdBy: userId,
+  });
+
+  if (!restaurant) {
+    throw new Error("Restaurant not found");
+  }
+
+  Object.assign(restaurant, data);
+
+  await restaurant.save();
+
+  return {
+    id: restaurant._id.toString(),
+    name: restaurant.name,
+    slug: restaurant.slug,
+    phone: restaurant.phone,
+    email: restaurant.email,
+    address: restaurant.address,
+    theme: restaurant.theme,
+    isPublished: restaurant.isPublished,
+  };
+};

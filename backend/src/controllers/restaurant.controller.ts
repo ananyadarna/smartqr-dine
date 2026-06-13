@@ -1,8 +1,8 @@
 import { Request, Response, } from "express";
 
-import { createRestaurantSchema, } from "../validators/restaurant.validator";
+import { createRestaurantSchema, updateRestaurantSchema} from "../validators/restaurant.validator";
 
-import { createRestaurant, getRestaurants, getRestaurantById } from "../services/restaurant.service";
+import { createRestaurant, getRestaurants, getRestaurantById, updateRestaurant } from "../services/restaurant.service";
 
 
 export const create = async (
@@ -87,6 +87,37 @@ export const getOne = async (
     });
   } catch (error) {
     return res.status(404).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+    });
+  }
+};
+
+export const update = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    const user = (req as any).user;
+
+    const data = updateRestaurantSchema.parse(req.body);
+
+    const restaurant = await updateRestaurant(
+      req.params.id,
+      user._id.toString(),
+      data
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Restaurant updated successfully",
+      data: restaurant,
+    });
+  } catch (error) {
+    return res.status(400).json({
       success: false,
       error:
         error instanceof Error

@@ -31,5 +31,5 @@ export const createRestaurantSchema = z.object({
   ]),
 });
 
-export type CreateRestaurantInput =
-  z.infer<typeof createRestaurantSchema>;
+export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;
+export const updateRestaurantSchema = createRestaurantSchema.partial();
