@@ -94,7 +94,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800">
+    <div className="h-screen flex bg-slate-50 text-slate-800 overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="w-64 bg-[#0a0f1d] text-white hidden md:flex flex-col justify-between border-r border-slate-800/80 shrink-0">
         <div>
