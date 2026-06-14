@@ -29,6 +29,9 @@ export const createRestaurantSchema = z.object({
     "luxury",
     "fastfood",
   ]),
+
+  logo: z.string().optional(),
+  banner: z.string().optional(),
 });
 
 export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;

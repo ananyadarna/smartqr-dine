@@ -47,6 +47,7 @@ export const registerUser = async ({
     name: user.name,
     email: user.email,
     role: user.role,
+    restaurantId: user.restaurantId ? user.restaurantId.toString() : null,
   };
 
   return {
@@ -76,6 +77,16 @@ export const loginUser = async ({
     throw new Error("Invalid email or password");
   }
 
+  // Self-healing: check if user has created a restaurant but restaurantId is not linked
+  if (!user.restaurantId) {
+    const { Restaurant } = await import("../models/Restaurant");
+    const existingRestaurant = await Restaurant.findOne({ createdBy: user._id });
+    if (existingRestaurant) {
+      user.restaurantId = existingRestaurant._id;
+      await user.save();
+    }
+  }
+
   const token = generateToken(
     user._id.toString()
   );
@@ -86,6 +97,7 @@ export const loginUser = async ({
       name: user.name,
       email: user.email,
       role: user.role,
+      restaurantId: user.restaurantId ? user.restaurantId.toString() : null,
     },
     token,
   };

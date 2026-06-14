@@ -30,8 +30,15 @@ export const createFoodItem = async (
   return {
     id: foodItem._id.toString(),
     name: foodItem.name,
+    description: foodItem.description,
+    image: foodItem.image,
     price: foodItem.price,
     isAvailable: foodItem.isAvailable,
+    isFeatured: foodItem.isFeatured,
+    categoryId: foodItem.categoryId.toString(),
+    restaurantId: foodItem.restaurantId.toString(),
+    allergens: foodItem.allergens || [],
+    customizationOptions: foodItem.customizationOptions || [],
   };
 };
 

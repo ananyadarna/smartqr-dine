@@ -72,6 +72,7 @@ export const getProfile = async (
         name: user.name,
         email: user.email,
         role: user.role,
+        restaurantId: user.restaurantId ? user.restaurantId.toString() : null,
       },
     });
   } catch (error) {

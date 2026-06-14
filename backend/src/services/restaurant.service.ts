@@ -1,7 +1,6 @@
 import { Restaurant } from "../models/Restaurant";
-
+import { User } from "../models/User";
 import {CreateRestaurantInput,} from "../validators/restaurant.validator";
-
 import {generateUniqueSlug,} from "../utils/slug";
 
 export const createRestaurant = async (
@@ -20,14 +19,18 @@ export const createRestaurant = async (
       createdBy: userId,
     });
 
+  // Update the user's restaurantId in MongoDB
+  await User.findByIdAndUpdate(userId, {
+    restaurantId: restaurant._id,
+  });
+
   return {
     id: restaurant._id.toString(),
-
     name: restaurant.name,
-
     slug: restaurant.slug,
-
     theme: restaurant.theme,
+    logo: restaurant.logo,
+    banner: restaurant.banner,
   };
 };
 
@@ -112,6 +115,8 @@ export const updateRestaurant = async (
     email: restaurant.email,
     address: restaurant.address,
     theme: restaurant.theme,
+    logo: restaurant.logo,
+    banner: restaurant.banner,
     isPublished: restaurant.isPublished,
   };
 };

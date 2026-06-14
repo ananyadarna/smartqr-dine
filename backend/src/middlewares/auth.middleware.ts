@@ -43,6 +43,16 @@ export const protect = async (
       });
     }
 
+    // Self-healing: check if user has created a restaurant but restaurantId is not linked
+    if (!user.restaurantId) {
+      const { Restaurant } = await import("../models/Restaurant");
+      const existingRestaurant = await Restaurant.findOne({ createdBy: user._id });
+      if (existingRestaurant) {
+        user.restaurantId = existingRestaurant._id;
+        await user.save();
+      }
+    }
+
     (req as any).user = user;
 
     next();

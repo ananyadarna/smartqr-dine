@@ -10,23 +10,34 @@ interface CartItem {
 
 interface CartStore {
   items: CartItem[];
+  restaurantId: string | null;
+  tableId: string | null;
+  tableCode: string | null;
+  
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
   increaseQuantity: (id: string) => void;
   decreaseQuantity: (id: string) => void;
   clearCart: () => void;
+  
+  setTableAndRestaurant: (
+    tableId: string, 
+    restaurantId: string, 
+    tableCode: string
+  ) => void;
 }
 
 export const useCartStore = create<CartStore>()(
   persist(
     (set) => ({
       items: [],
+      restaurantId: null,
+      tableId: null,
+      tableCode: null,
 
       addItem: (item) =>
         set((state) => {
-          const existing = state.items.find(
-            (i) => i.id === item.id
-          );
+          const existing = state.items.find((i) => i.id === item.id);
 
           if (existing) {
             return {
@@ -51,19 +62,14 @@ export const useCartStore = create<CartStore>()(
 
       removeItem: (id) =>
         set((state) => ({
-          items: state.items.filter(
-            (i) => i.id !== id
-          ),
+          items: state.items.filter((i) => i.id !== id),
         })),
 
       increaseQuantity: (id) =>
         set((state) => ({
           items: state.items.map((item) =>
             item.id === id
-              ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                }
+              ? { ...item, quantity: item.quantity + 1 }
               : item
           ),
         })),
@@ -73,10 +79,7 @@ export const useCartStore = create<CartStore>()(
           items: state.items
             .map((item) =>
               item.id === id
-                ? {
-                    ...item,
-                    quantity: item.quantity - 1,
-                  }
+                ? { ...item, quantity: item.quantity - 1 }
                 : item
             )
             .filter((item) => item.quantity > 0),
@@ -85,6 +88,14 @@ export const useCartStore = create<CartStore>()(
       clearCart: () =>
         set({
           items: [],
+          // We preserve table/restaurant context so the diner remains bound to the scan
+        }),
+
+      setTableAndRestaurant: (tableId, restaurantId, tableCode) =>
+        set({
+          tableId,
+          restaurantId,
+          tableCode,
         }),
     }),
     {
