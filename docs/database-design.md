@@ -380,7 +380,7 @@ delivered
     | "accepted"
     | "preparing"
     | "ready"
-    | "delivered",
+    | "served",
 
   acceptedAt: Date | null,
 
