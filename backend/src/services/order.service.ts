@@ -153,16 +153,11 @@ export const updateOrderStatus = async (
   // Emit real-time event to restaurant dashboard
   const io = getIO();
 
-  io.to(
-    order.restaurantId.toString()
-  ).emit(
-    "order_status_updated",
-    {
-        orderId: order._id.toString(),
-        orderNumber: order.orderNumber,
-        status: order.status,
-    }
- );
+  io.emit("order_status_updated", {
+    orderId: order._id.toString(),
+    orderNumber: order.orderNumber,
+    status: order.status,
+  });
 
   return {
     id: order._id.toString(),
