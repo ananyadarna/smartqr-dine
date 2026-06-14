@@ -193,6 +193,32 @@ export const getOrderById = async (
     totalAmount: order.totalAmount,
     customerNote: order.customerNote,
     status: order.status,
+
+    progress: {
+      pending: true,
+
+      accepted: [
+        "accepted",
+        "preparing",
+        "ready",
+        "served",
+      ].includes(order.status),
+
+      preparing: [
+        "preparing",
+        "ready",
+        "served",
+      ].includes(order.status),
+
+      ready: [
+        "ready",
+        "served",
+      ].includes(order.status),
+
+      served:
+        order.status === "served",
+    },
+
     createdAt: order.createdAt,
   };
 }

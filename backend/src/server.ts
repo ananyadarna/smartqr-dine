@@ -12,6 +12,7 @@ import tableRoutes from "./routes/table.routes";
 import qrRoutes from "./routes/qr.routes";
 import orderRoutes from "./routes/order.routes";
 import publicRoutes from "./routes/public.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
 
 import { connectDB } from "./config/database";
 dotenv.config();
@@ -40,6 +41,7 @@ app.use("/api/tables", tableRoutes);
 app.use("/api/qr", qrRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/public", publicRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 const server = http.createServer(app);
 initializeSocket(server);
