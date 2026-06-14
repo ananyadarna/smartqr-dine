@@ -473,21 +473,9 @@ export default function DashboardPage() {
       </AnimatePresence>
 
       {/* Floating Top Navbar Header (Clean floating components matching mockup) */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10 py-1">
-        {/* Dynamic Search Bar */}
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search orders, menu items, or customers..."
-            className="w-full bg-white border border-slate-200/80 focus:border-slate-300 focus:ring-1 focus:ring-slate-300 rounded-xl pl-10 pr-4 py-2 outline-none text-slate-800 text-sm transition font-medium shadow-sm"
-          />
-        </div>
-
+      <div className="flex justify-end items-center relative z-10 py-1">
         {/* User / Profile Details */}
-        <div className="flex items-center gap-5 shrink-0 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-5 shrink-0 justify-end">
           {/* Bell Icon with jiggle animation */}
           <motion.button 
             animate={animateBell ? { rotate: [-10, 10, -10, 10, 0] } : {}}
