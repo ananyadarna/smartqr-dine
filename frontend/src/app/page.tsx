@@ -80,21 +80,17 @@ export default function LandingPage() {
   const user = useAuthStore((state) => state.user);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // 3D Perspective Tilt State
+  // 3D Perspective Tilt State (Dashboard Mockup)
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Order Simulation State
-  const [ordersToday, setOrdersToday] = useState(141);
-  const [activeOrders, setActiveOrders] = useState([
-    { id: "o1", name: "Steak Frites, Caesar Salad", table: "T-4", status: "PREPARING", color: "orange" },
-    { id: "o2", name: "Mushroom Risotto (x2)", table: "T-12", status: "READY", color: "blue" },
-  ]);
-  const [mobileActionState, setMobileActionState] = useState<"idle" | "ordering" | "sent">("idle");
-  const [showFlyingPacket, setShowFlyingPacket] = useState(false);
+  // 3D Perspective Tilt State (CTA Banner)
+  const [ctaRotateX, setCtaRotateX] = useState(0);
+  const [ctaRotateY, setCtaRotateY] = useState(0);
+  const [isCtaHovered, setIsCtaHovered] = useState(false);
 
-  // Mouse hover listener for 3D tilt
+  // Mouse hover listener for 3D tilt (Dashboard Mockup)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     const rect = el.getBoundingClientRect();
@@ -111,6 +107,33 @@ export default function LandingPage() {
     setRotateX(0);
     setRotateY(0);
   };
+
+  // Mouse hover listener for 3D tilt (CTA Banner)
+  const handleCtaMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xc = rect.width / 2;
+    const yc = rect.height / 2;
+    setCtaRotateX((yc - y) / 20); // softer tilt
+    setCtaRotateY((x - xc) / 20);
+  };
+
+  const handleCtaMouseLeave = () => {
+    setIsCtaHovered(false);
+    setCtaRotateX(0);
+    setCtaRotateY(0);
+  };
+
+  // Order Simulation State
+  const [ordersToday, setOrdersToday] = useState(141);
+  const [activeOrders, setActiveOrders] = useState([
+    { id: "o1", name: "Steak Frites, Caesar Salad", table: "T-4", status: "PREPARING", color: "orange" },
+    { id: "o2", name: "Mushroom Risotto (x2)", table: "T-12", status: "READY", color: "blue" },
+  ]);
+  const [mobileActionState, setMobileActionState] = useState<"idle" | "ordering" | "sent">("idle");
+  const [showFlyingPacket, setShowFlyingPacket] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -569,27 +592,68 @@ export default function LandingPage() {
 
       {/* Solutions / Call To Action */}
       <section id="solutions" className="py-24 px-6 relative">
-        <div className="max-w-4xl mx-auto rounded-3xl bg-linear-to-tr from-orange-600 to-amber-500 p-8 md:p-16 text-center shadow-xl shadow-orange-600/10 relative overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 50, scale: 0.96 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ type: "spring", stiffness: 100, damping: 16, duration: 0.8 }}
+          onMouseMove={handleCtaMouseMove}
+          onMouseEnter={() => setIsCtaHovered(true)}
+          onMouseLeave={handleCtaMouseLeave}
+          style={{
+            transform: isCtaHovered
+              ? `perspective(1000px) rotateX(${ctaRotateX}deg) rotateY(${ctaRotateY}deg) scale3d(1.015, 1.015, 1.015)`
+              : 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+            transition: isCtaHovered ? 'none' : 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+            transformStyle: "preserve-3d"
+          }}
+          className="max-w-4xl mx-auto rounded-3xl bg-linear-to-tr from-orange-650 to-amber-500 p-8 md:p-16 text-center shadow-xl shadow-orange-600/10 relative overflow-hidden cursor-default select-none"
+        >
           {/* Sparkles overlay */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] bg-size-[12px_12px]"></div>
+          <div 
+            style={{ transform: "translateZ(-10px)" }}
+            className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] bg-size-[12px_12px]"
+          ></div>
           
-          <h2 className="text-3xl md:text-5xl font-extrabold mb-6 relative z-10 leading-tight">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.15, duration: 0.6 }}
+            style={{ transform: "translateZ(30px)" }}
+            className="text-3xl md:text-5xl font-extrabold mb-6 relative z-10 leading-tight"
+          >
             Ready to upgrade your business?
-          </h2>
-          <p className="text-white/80 max-w-xl mx-auto mb-10 text-base md:text-lg font-light relative z-10">
-            Sign up today and get your restaurant onboarded under 5 minutes. No credit card required.
-          </p>
+          </motion.h2>
           
-          <div className="relative z-10 flex justify-center">
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.25, duration: 0.6 }}
+            style={{ transform: "translateZ(15px)" }}
+            className="text-white/80 max-w-xl mx-auto mb-10 text-base md:text-lg font-light relative z-10"
+          >
+            Sign up today and get your restaurant onboarded under 5 minutes. No credit card required.
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.35, duration: 0.6 }}
+            style={{ transform: "translateZ(25px)", transformStyle: "preserve-3d" }}
+            className="relative z-10 flex justify-center"
+          >
             <Link 
               href="/auth/register"
-              className="bg-white text-orange-600 hover:bg-slate-50 font-bold px-8 py-4 rounded-xl cursor-pointer shadow-lg shadow-black/10 transition inline-flex items-center gap-2"
+              className="bg-white text-orange-600 hover:bg-slate-50 font-bold px-8 py-4 rounded-xl cursor-pointer shadow-lg shadow-black/10 transition inline-flex items-center gap-2 group"
             >
               Get Started For Free
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
             </Link>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Footer */}
