@@ -24,6 +24,7 @@ export default function CartPage() {
   const restaurantId = useCartStore((state) => state.restaurantId);
   const tableId = useCartStore((state) => state.tableId);
   const tableCode = useCartStore((state) => state.tableCode);
+  const tableSessionId = useCartStore((state) => state.tableSessionId);
   const clearCart = useCartStore((state) => state.clearCart);
 
   const [customerNote, setCustomerNote] = useState("");
@@ -48,6 +49,7 @@ export default function CartPage() {
       const payload = {
         restaurantId,
         tableId,
+        tableSessionId,
         items: items.map((item) => ({
           foodId: item.id,
           quantity: item.quantity,

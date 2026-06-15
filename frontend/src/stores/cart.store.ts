@@ -13,6 +13,8 @@ interface CartStore {
   restaurantId: string | null;
   tableId: string | null;
   tableCode: string | null;
+  tableSessionId: string | null;
+  sessionCreatedAt: number | null;
   
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
@@ -34,6 +36,8 @@ export const useCartStore = create<CartStore>()(
       restaurantId: null,
       tableId: null,
       tableCode: null,
+      tableSessionId: null,
+      sessionCreatedAt: null,
 
       addItem: (item) =>
         set((state) => {
@@ -92,10 +96,27 @@ export const useCartStore = create<CartStore>()(
         }),
 
       setTableAndRestaurant: (tableId, restaurantId, tableCode) =>
-        set({
-          tableId,
-          restaurantId,
-          tableCode,
+        set((state) => {
+          const now = Date.now();
+          const isNewTable = state.tableCode !== tableCode;
+          const isExpired = state.sessionCreatedAt 
+            ? (now - state.sessionCreatedAt) > 4 * 60 * 60 * 1000 
+            : false;
+
+          const shouldReset = !state.tableSessionId || isNewTable || isExpired;
+          const tableSessionId = shouldReset
+            ? `sess_${now}_${Math.random().toString(36).substring(2, 11)}`
+            : state.tableSessionId;
+          const sessionCreatedAt = shouldReset ? now : state.sessionCreatedAt;
+
+          return {
+            tableId,
+            restaurantId,
+            tableCode,
+            tableSessionId,
+            sessionCreatedAt,
+            items: (isNewTable || isExpired) ? [] : state.items,
+          };
         }),
     }),
     {

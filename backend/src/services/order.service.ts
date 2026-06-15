@@ -32,12 +32,33 @@ export const createOrder = async (
     );
   }
 
-  let currentSessionId = table.currentSessionId;
+  let currentSessionId = data.tableSessionId || table.currentSessionId;
   if (!currentSessionId) {
     currentSessionId = new mongoose.Types.ObjectId().toString();
+  }
+
+  if (table.currentSessionId !== currentSessionId) {
     table.currentSessionId = currentSessionId;
     await table.save();
   }
+
+  // Self-heal legacy orders in the last 4 hours for this table
+  await Order.updateMany(
+    {
+      tableId: data.tableId,
+      createdAt: { $gte: new Date(Date.now() - 4 * 60 * 60 * 1000) },
+      $or: [
+        { tableSessionId: "" },
+        { tableSessionId: { $exists: false } }
+      ]
+    },
+    {
+      $set: {
+        tableSessionId: currentSessionId,
+        tableCode: table.tableCode
+      }
+    }
+  );
 
   let totalAmount = 0;
 
@@ -258,6 +279,24 @@ export const getOrdersByTable = async (tableId: string) => {
     table.currentSessionId = currentSessionId;
     await table.save();
   }
+
+  // Self-heal legacy orders in the last 4 hours for this table
+  await Order.updateMany(
+    {
+      tableId,
+      createdAt: { $gte: new Date(Date.now() - 4 * 60 * 60 * 1000) },
+      $or: [
+        { tableSessionId: "" },
+        { tableSessionId: { $exists: false } }
+      ]
+    },
+    {
+      $set: {
+        tableSessionId: currentSessionId,
+        tableCode: table.tableCode
+      }
+    }
+  );
 
   const orders = await Order.find({
     tableId,

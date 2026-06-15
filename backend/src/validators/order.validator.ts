@@ -5,6 +5,8 @@ export const createOrderSchema = z.object({
 
   tableId: z.string(),
 
+  tableSessionId: z.string().optional(),
+
   items: z
     .array(
       z.object({
