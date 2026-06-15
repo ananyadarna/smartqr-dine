@@ -19,3 +19,8 @@ export const deleteTable = async (id: string) => {
   const response = await api.delete(`/tables/${id}`);
   return response.data.data;
 };
+
+export const clearTableSession = async (id: string) => {
+  const response = await api.post(`/tables/${id}/clear`);
+  return response.data.data;
+};

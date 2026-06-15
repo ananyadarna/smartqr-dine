@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { createTableSchema } from "../validators/table.validator";
-import { createTable, getTablesByRestaurant, updateTable, deleteTable } from "../services/table.service";
+import { createTable, getTablesByRestaurant, updateTable, deleteTable, clearTableSession } from "../services/table.service";
 
 export const create = async (
   req: Request,
@@ -103,6 +103,34 @@ export const remove = async (
     return res.status(200).json({
       success: true,
       message: "Table deleted successfully",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+    });
+  }
+};
+
+export const clearSession = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    const user = (req as any).user;
+
+    const table = await clearTableSession(
+      req.params.id,
+      user._id.toString()
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Table session cleared successfully",
+      data: table,
     });
   } catch (error) {
     return res.status(400).json({

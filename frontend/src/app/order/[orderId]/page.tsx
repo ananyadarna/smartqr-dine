@@ -15,7 +15,7 @@ import {
   Bell,
   ShoppingCart
 } from "lucide-react";
-import { getOrder, getOrdersByTable } from "@/services/order.service";
+import { getOrder, getOrdersByTable, getOrdersBySession } from "@/services/order.service";
 import { socket } from "@/lib/socket";
 
 // Helper function to synthesize status chime
@@ -61,7 +61,10 @@ export default function OrderPage({ params }: PageProps) {
         const { orderId } = await params;
         const data = await getOrder(orderId);
         setOrder(data);
-        if (data.tableId) {
+        if (data.tableSessionId) {
+          const orders = await getOrdersBySession(data.tableSessionId);
+          setTableOrders(orders);
+        } else if (data.tableId) {
           const orders = await getOrdersByTable(data.tableId);
           setTableOrders(orders);
         }

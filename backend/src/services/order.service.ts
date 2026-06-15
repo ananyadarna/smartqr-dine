@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Order } from "../models/Order";
 import { Table } from "../models/Table";
 import { FoodItem } from "../models/FoodItem";
@@ -29,6 +30,13 @@ export const createOrder = async (
     throw new Error(
       "Table not found"
     );
+  }
+
+  let currentSessionId = table.currentSessionId;
+  if (!currentSessionId) {
+    currentSessionId = new mongoose.Types.ObjectId().toString();
+    table.currentSessionId = currentSessionId;
+    await table.save();
   }
 
   let totalAmount = 0;
@@ -67,6 +75,8 @@ export const createOrder = async (
 
       tableNumber: table.tableNumber,
       tableName: table.name,
+      tableCode: table.tableCode,
+      tableSessionId: currentSessionId,
 
       orderNumber: generateOrderNumber(),
 
@@ -198,7 +208,8 @@ export const getOrderById = async (
     id: order._id.toString(),
     orderNumber: order.orderNumber,
     tableId: order.tableId.toString(),
-    tableCode: table?.tableCode || "",
+    tableCode: order.tableCode || table?.tableCode || "",
+    tableSessionId: order.tableSessionId || "",
     tableNumber: order.tableNumber,
     tableName: order.tableName,
     items: populatedItems,
@@ -237,10 +248,20 @@ export const getOrderById = async (
 
 export const getOrdersByTable = async (tableId: string) => {
   const table = await Table.findById(tableId);
-  const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  let currentSessionId = table.currentSessionId;
+  if (!currentSessionId) {
+    currentSessionId = new mongoose.Types.ObjectId().toString();
+    table.currentSessionId = currentSessionId;
+    await table.save();
+  }
+
   const orders = await Order.find({
     tableId,
-    createdAt: { $gte: fourHoursAgo },
+    tableSessionId: currentSessionId,
   }).sort({ createdAt: 1 });
 
   const result = [];
@@ -261,7 +282,48 @@ export const getOrdersByTable = async (tableId: string) => {
       id: order._id.toString(),
       orderNumber: order.orderNumber,
       tableId: order.tableId.toString(),
-      tableCode: table?.tableCode || "",
+      tableCode: order.tableCode || table?.tableCode || "",
+      tableSessionId: order.tableSessionId || "",
+      tableNumber: order.tableNumber,
+      tableName: order.tableName,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      items: populatedItems,
+      customerNote: order.customerNote,
+      createdAt: order.createdAt,
+    });
+  }
+  return result;
+};
+
+export const getOrdersBySession = async (tableSessionId: string) => {
+  if (!tableSessionId) {
+    return [];
+  }
+  const orders = await Order.find({
+    tableSessionId,
+  }).sort({ createdAt: 1 });
+
+  const result = [];
+  for (const order of orders) {
+    const populatedItems = [];
+    for (const item of order.items) {
+      const foodItem = await FoodItem.findById(item.foodId);
+      populatedItems.push({
+        foodId: item.foodId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        customizations: item.customizations,
+        image: foodItem?.image || "",
+      });
+    }
+    result.push({
+      id: order._id.toString(),
+      orderNumber: order.orderNumber,
+      tableId: order.tableId.toString(),
+      tableCode: order.tableCode || "",
+      tableSessionId: order.tableSessionId || "",
       tableNumber: order.tableNumber,
       tableName: order.tableName,
       totalAmount: order.totalAmount,

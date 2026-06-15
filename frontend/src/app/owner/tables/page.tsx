@@ -10,9 +10,10 @@ import {
   QrCode, 
   RefreshCw, 
   TableProperties, 
-  Trash2 
+  Trash2,
+  Sparkles
 } from "lucide-react";
-import { getTablesByRestaurant, createTable, deleteTable, updateTable } from "@/services/table.service";
+import { getTablesByRestaurant, createTable, deleteTable, updateTable, clearTableSession } from "@/services/table.service";
 import { generateQR } from "@/services/qr.service";
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -109,6 +110,19 @@ export default function TablesManagementPage() {
       setTables((prev) => prev.filter((t) => t.id !== tableId));
     } catch (err) {
       console.error("Failed to delete table:", err);
+    }
+  };
+
+  // Clear table session (New Guest)
+  const handleClearTable = async (table: any) => {
+    if (!confirm(`Are you sure you want to clear ${table.name}? This will archive the current customer bill and start a fresh session for the next guests.`)) return;
+    try {
+      await clearTableSession(table.id);
+      alert(`${table.name} cleared successfully! Any new scans/orders will start a fresh bill.`);
+      loadTables();
+    } catch (err) {
+      console.error("Failed to clear table session:", err);
+      alert("Failed to clear table session.");
     }
   };
 
@@ -217,13 +231,21 @@ export default function TablesManagementPage() {
               <div className="flex justify-between items-center pt-3 border-t border-slate-100">
                 <button
                   onClick={() => handleDeleteTable(table.id)}
-                  className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"
+                  className="text-red-400 hover:text-red-650 p-1.5 rounded-lg hover:bg-red-50 transition"
                   title="Delete Table"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleClearTable(table)}
+                    className="p-1.5 rounded-lg border border-slate-200 text-[#A14E1B] hover:bg-orange-50 hover:text-orange-700 transition flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                    title="Clear Session / Start New Guest Bill"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
+                    Clear Table
+                  </button>
                   <a 
                     href={`/menu/${table.tableCode}`} 
                     target="_blank"

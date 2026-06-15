@@ -7,6 +7,7 @@ export interface ITable extends Document {
   tableCode: string;
   qrCodeUrl: string;
   isActive: boolean;
+  currentSessionId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +46,11 @@ const tableSchema = new mongoose.Schema<ITable>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+
+    currentSessionId: {
+      type: String,
+      default: () => new mongoose.Types.ObjectId().toString(),
     },
   },
   {

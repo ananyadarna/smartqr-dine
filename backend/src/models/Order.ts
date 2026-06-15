@@ -13,6 +13,8 @@ export interface IOrder extends Document {
   tableId: mongoose.Types.ObjectId;
   tableNumber: number;
   tableName: string;
+  tableCode?: string;
+  tableSessionId?: string;
   orderNumber: string;
   items: IOrderItem[];
   totalAmount: number;
@@ -85,6 +87,17 @@ const orderSchema = new mongoose.Schema(
     tableName: {
       type: String,
       required: true,
+    },
+
+    tableCode: {
+      type: String,
+      default: "",
+    },
+
+    tableSessionId: {
+      type: String,
+      default: "",
+      index: true,
     },
 
     orderNumber: {

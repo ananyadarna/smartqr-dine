@@ -25,3 +25,8 @@ export const getOrdersByTable = async (tableId: string) => {
   const response = await api.get(`/orders/table/${tableId}`);
   return response.data.data;
 };
+
+export const getOrdersBySession = async (tableSessionId: string) => {
+  const response = await api.get(`/orders/session/${tableSessionId}`);
+  return response.data.data;
+};

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Table } from "../models/Table";
 import { Restaurant } from "../models/Restaurant";
 import { CreateTableInput } from "../validators/table.validator";
@@ -133,4 +134,38 @@ export const deleteTable = async (
   await Table.findByIdAndDelete(tableId);
 
   return true;
+};
+
+export const clearTableSession = async (
+  tableId: string,
+  userId: string
+) => {
+  const table = await Table.findById(tableId);
+
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const restaurant = await Restaurant.findOne({
+    _id: table.restaurantId,
+    createdBy: userId,
+  });
+
+  if (!restaurant) {
+    throw new Error("Unauthorized");
+  }
+
+  // Set a fresh session ID
+  table.currentSessionId = new mongoose.Types.ObjectId().toString();
+
+  await table.save();
+
+  return {
+    id: table._id.toString(),
+    tableNumber: table.tableNumber,
+    tableCode: table.tableCode,
+    name: table.name,
+    isActive: table.isActive,
+    currentSessionId: table.currentSessionId,
+  };
 };
