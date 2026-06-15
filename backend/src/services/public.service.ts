@@ -89,6 +89,8 @@ export const getMenuByTableCode = async (
         table.tableNumber,
       tableName:
         table.name,
+      currentSessionId:
+        table.currentSessionId || "",
     },
 
     categories: menu,

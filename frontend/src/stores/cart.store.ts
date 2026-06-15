@@ -25,7 +25,8 @@ interface CartStore {
   setTableAndRestaurant: (
     tableId: string, 
     restaurantId: string, 
-    tableCode: string
+    tableCode: string,
+    backendSessionId?: string
   ) => void;
 }
 
@@ -95,7 +96,7 @@ export const useCartStore = create<CartStore>()(
           // We preserve table/restaurant context so the diner remains bound to the scan
         }),
 
-      setTableAndRestaurant: (tableId, restaurantId, tableCode) =>
+      setTableAndRestaurant: (tableId, restaurantId, tableCode, backendSessionId) =>
         set((state) => {
           const now = Date.now();
           const isNewTable = state.tableCode !== tableCode;
@@ -103,9 +104,12 @@ export const useCartStore = create<CartStore>()(
             ? (now - state.sessionCreatedAt) > 4 * 60 * 60 * 1000 
             : false;
 
-          const shouldReset = !state.tableSessionId || isNewTable || isExpired;
+          // Check if backend session ID has changed (indicating the table was cleared/reset)
+          const isSessionChanged = !!(backendSessionId && state.tableSessionId && state.tableSessionId !== backendSessionId);
+
+          const shouldReset = !state.tableSessionId || isNewTable || isExpired || isSessionChanged;
           const tableSessionId = shouldReset
-            ? `sess_${now}_${Math.random().toString(36).substring(2, 11)}`
+            ? (backendSessionId || `sess_${now}_${Math.random().toString(36).substring(2, 11)}`)
             : state.tableSessionId;
           const sessionCreatedAt = shouldReset ? now : state.sessionCreatedAt;
 
@@ -115,7 +119,7 @@ export const useCartStore = create<CartStore>()(
             tableCode,
             tableSessionId,
             sessionCreatedAt,
-            items: (isNewTable || isExpired) ? [] : state.items,
+            items: (isNewTable || isExpired || isSessionChanged) ? [] : state.items,
           };
         }),
     }),

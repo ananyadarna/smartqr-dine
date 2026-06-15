@@ -31,7 +31,12 @@ export default function ClientMenu({ menu, tableCode }: ClientMenuProps) {
 
   // Store active table and restaurant context in Zustand
   useEffect(() => {
-    setTableAndRestaurant(menu.table.id, menu.restaurant.id, tableCode);
+    setTableAndRestaurant(
+      menu.table.id, 
+      menu.restaurant.id, 
+      tableCode, 
+      (menu.table as any).currentSessionId
+    );
   }, [menu, tableCode]);
 
   // Calculate total items in the cart
