@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
-  ArrowLeft, 
   Check, 
   ChefHat, 
   Clock, 
@@ -12,10 +11,11 @@ import {
   Loader2, 
   PartyPopper, 
   ShoppingBag, 
-  Sparkles, 
-  UtensilsCrossed 
+  UtensilsCrossed,
+  Bell,
+  ShoppingCart
 } from "lucide-react";
-import { getOrder } from "@/services/order.service";
+import { getOrder, getOrdersByTable } from "@/services/order.service";
 import { socket } from "@/lib/socket";
 
 // Helper function to synthesize status chime
@@ -51,6 +51,8 @@ interface PageProps {
 export default function OrderPage({ params }: PageProps) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [waiterCalled, setWaiterCalled] = useState(false);
+  const [tableOrders, setTableOrders] = useState<any[]>([]);
 
   // Fetch initial order details
   useEffect(() => {
@@ -59,6 +61,10 @@ export default function OrderPage({ params }: PageProps) {
         const { orderId } = await params;
         const data = await getOrder(orderId);
         setOrder(data);
+        if (data.tableId) {
+          const orders = await getOrdersByTable(data.tableId);
+          setTableOrders(orders);
+        }
       } catch (err) {
         console.error("Failed to load order:", err);
       } finally {
@@ -75,22 +81,36 @@ export default function OrderPage({ params }: PageProps) {
 
     const handleStatusUpdate = (data: any) => {
       console.log("Diner socket received status update:", data);
-      if (data.orderId === order.id) {
+      
+      const hasOrder = tableOrders.some((o: any) => o.id === data.orderId);
+      const isCurrentOrder = data.orderId === order.id;
+
+      if (isCurrentOrder || hasOrder) {
         // Play notification chime
         playStatusChime();
 
-        // Update local status states
-        setOrder((prev: any) => ({
-          ...prev,
-          status: data.status,
-          progress: {
-            pending: true,
-            accepted: ["accepted", "preparing", "ready", "served"].includes(data.status),
-            preparing: ["preparing", "ready", "served"].includes(data.status),
-            ready: ["ready", "served"].includes(data.status),
-            served: data.status === "served",
-          },
-        }));
+        if (isCurrentOrder) {
+          setOrder((prev: any) => ({
+            ...prev,
+            status: data.status,
+            progress: {
+              pending: true,
+              accepted: ["accepted", "preparing", "ready", "served"].includes(data.status),
+              preparing: ["preparing", "ready", "served"].includes(data.status),
+              ready: ["ready", "served"].includes(data.status),
+              served: data.status === "served",
+            },
+          }));
+        }
+
+        // Update in tableOrders too
+        setTableOrders((prevOrders) =>
+          prevOrders.map((o) =>
+            o.id === data.orderId
+              ? { ...o, status: data.status }
+              : o
+          )
+        );
       }
     };
 
@@ -99,7 +119,7 @@ export default function OrderPage({ params }: PageProps) {
     return () => {
       socket.off("order_status_updated", handleStatusUpdate);
     };
-  }, [order]);
+  }, [order, tableOrders]);
 
   if (loading) {
     return (
@@ -119,26 +139,154 @@ export default function OrderPage({ params }: PageProps) {
     );
   }
 
-  const steps = [
-    { key: "pending", label: "Order Received", desc: "Sent to the kitchen." },
-    { key: "accepted", label: "Confirmed", desc: "Chef is reviewing." },
-    { key: "preparing", label: "Cooking", desc: "Preparing your food." },
-    { key: "ready", label: "Ready to Serve", desc: "Dish is hot and ready!" },
-    { key: "served", label: "Delivered", desc: "Delivered to table. Enjoy!" },
-  ];
-
-  // Helper to check step state
-  const isStepActive = (stepKey: string) => {
-    if (order.status === stepKey) return true;
-    return false;
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case "pending":
+        return {
+          Title: "Received",
+          Description: "The kitchen is reviewing your order",
+          Icon: <ShoppingBag className="w-7 h-7 text-[#A14E1B]" />,
+          EstTime: "Est. 10 MIN REMAINING",
+          StepIndex: 0,
+        };
+      case "accepted":
+        return {
+          Title: "Confirmed",
+          Description: "The kitchen has confirmed your order",
+          Icon: <Check className="w-7 h-7 text-[#A14E1B]" />,
+          EstTime: "Est. 8 MIN REMAINING",
+          StepIndex: 0,
+        };
+      case "preparing":
+        return {
+          Title: "Preparing",
+          Description: "The chef is crafting your order",
+          Icon: <UtensilsCrossed className="w-7 h-7 text-[#A14E1B]" />,
+          EstTime: "Est. 6 MIN REMAINING",
+          StepIndex: 1,
+        };
+      case "ready":
+        return {
+          Title: "Ready to Serve",
+          Description: "Your order is hot and ready!",
+          Icon: <ChefHat className="w-7 h-7 text-[#A14E1B]" />,
+          EstTime: "READY",
+          StepIndex: 2,
+        };
+      case "served":
+        return {
+          Title: "Served",
+          Description: "Enjoy your delicious meal!",
+          Icon: <PartyPopper className="w-7 h-7 text-[#A14E1B]" />,
+          EstTime: "SERVED",
+          StepIndex: 3,
+        };
+      default:
+        return {
+          Title: "Pending",
+          Description: "Waiting for kitchen response",
+          Icon: <UtensilsCrossed className="w-7 h-7 text-[#A14E1B]" />,
+          EstTime: "Est. -- MIN REMAINING",
+          StepIndex: 0,
+        };
+    }
   };
 
-  const isStepDone = (stepKey: string) => {
-    return order.progress[stepKey] === true;
+  // Helper to merge duplicate items (same foodId and customizations key)
+  const mergeOrderItems = (ordersList: any[]) => {
+    const mergedMap = new Map<string, any>();
+    ordersList.forEach(o => {
+      if (!o.items) return;
+      o.items.forEach((item: any) => {
+        const customizationsKey = item.customizations 
+          ? [...item.customizations].sort().join(",") 
+          : "";
+        const key = `${item.foodId}_${customizationsKey}`;
+        if (mergedMap.has(key)) {
+          const existing = mergedMap.get(key);
+          existing.quantity += item.quantity;
+        } else {
+          mergedMap.set(key, { ...item });
+        }
+      });
+    });
+    return Array.from(mergedMap.values());
+  };
+
+  // Find the current tracked order's creation time
+  const currentOrderInList = tableOrders.find((o: any) => o.id === order.id) || order;
+  const currentOrderCreatedAt = currentOrderInList?.createdAt ? new Date(currentOrderInList.createdAt).getTime() : 0;
+
+  // Divide tableOrders into previous, current, subsequent
+  const previousOrders = tableOrders.filter((o: any) => {
+    if (o.id === order.id) return false;
+    const t = o.createdAt ? new Date(o.createdAt).getTime() : 0;
+    return t < currentOrderCreatedAt;
+  });
+
+  const subsequentOrders = tableOrders.filter((o: any) => {
+    if (o.id === order.id) return false;
+    const t = o.createdAt ? new Date(o.createdAt).getTime() : 0;
+    return t > currentOrderCreatedAt;
+  });
+
+  const previousItems = mergeOrderItems(previousOrders);
+  const currentItems = mergeOrderItems([currentOrderInList]);
+  const subsequentItems = mergeOrderItems(subsequentOrders);
+
+  const previousSubtotal = previousItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const currentSubtotal = currentItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subsequentSubtotal = subsequentItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const grandTotal = previousSubtotal + currentSubtotal + subsequentSubtotal;
+
+  // Active preparation status driven by the latest active order (the one they are actively waiting for)
+  const activeOrder = [...tableOrders]
+    .reverse()
+    .find((o: any) => o.status !== "served") || tableOrders[tableOrders.length - 1] || order;
+
+  const statusInfo = getStatusInfo(activeOrder.status);
+
+  const horizontalSteps = [
+    {
+      label: "Received",
+      icon: ShoppingBag,
+      activeSub: "Received",
+      completedSub: activeOrder.createdAt ? new Date(activeOrder.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Done",
+      inactiveSub: "--:--",
+    },
+    {
+      label: "Preparing",
+      icon: UtensilsCrossed,
+      activeSub: "In Progress",
+      completedSub: "Prepared",
+      inactiveSub: "Waiting",
+    },
+    {
+      label: "Ready",
+      icon: ChefHat,
+      activeSub: "Waiting",
+      completedSub: "Ready",
+      inactiveSub: "Waiting",
+    },
+    {
+      label: "Served",
+      icon: PartyPopper,
+      activeSub: "Served",
+      completedSub: "Served",
+      inactiveSub: "--:--",
+    },
+  ];
+
+  const handleCallWaiter = () => {
+    setWaiterCalled(true);
+    setTimeout(() => {
+      setWaiterCalled(false);
+    }, 4000);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
+    <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 relative">
       {/* Header bar */}
       <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-200/40 z-40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -152,7 +300,7 @@ export default function OrderPage({ params }: PageProps) {
         
         {/* Link back to menu */}
         <Link 
-          href={`/scan/${order.tableCode || ""}`}
+          href={`/scan/${activeOrder.tableCode || order.tableCode || ""}`}
           className="text-xs text-orange-500 hover:text-orange-600 font-bold border border-orange-500/20 hover:border-orange-500/30 px-3 py-1.5 rounded-lg transition"
         >
           Order More
@@ -161,119 +309,302 @@ export default function OrderPage({ params }: PageProps) {
 
       <div className="max-w-md mx-auto px-4 mt-6 space-y-6">
         
-        {/* Dynamic header summary card */}
-        <div className="bg-white border border-slate-200/50 rounded-2xl p-6 shadow-sm text-center relative overflow-hidden">
-          {order.status === "served" && (
-            <div className="absolute top-0 right-0 w-16 h-16 bg-linear-to-tr from-emerald-500/20 to-emerald-500/40 rounded-bl-full flex items-center justify-center">
-              <PartyPopper className="w-5 h-5 text-emerald-600 -translate-x-1.5 translate-y-1.5" />
+        {/* Top: Status Summary Card */}
+        <div className="flex flex-col items-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full bg-white rounded-3xl p-8 shadow-[0_10px_35px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col items-center text-center relative overflow-hidden"
+          >
+            {/* Cutler Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-orange-500/5 flex items-center justify-center mb-4 border border-orange-500/10 text-[#A14E1B]">
+              {statusInfo.Icon}
             </div>
-          )}
+            
+            {/* Title */}
+            <h2 className="text-2xl font-black text-[#A14E1B] tracking-tight">
+              {statusInfo.Title}
+            </h2>
+            
+            {/* Description */}
+            <p className="text-slate-400 text-xs mt-2 max-w-[240px] font-medium leading-relaxed">
+              {statusInfo.Description}
+            </p>
+            
+            {/* Order Reference Number */}
+            <span className="text-[10px] text-slate-450 font-mono mt-3.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg block font-semibold">
+              #{activeOrder.orderNumber.split("-")[1]?.slice(-6) || activeOrder.orderNumber}
+            </span>
+          </motion.div>
 
-          <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block mb-1">
-            Order #{order.orderNumber.split("-")[1]?.slice(-6) || order.orderNumber}
-          </span>
-          <h2 className="text-2xl font-black text-slate-800">
-            {order.status === "pending" && "Waiting for Kitchen"}
-            {order.status === "accepted" && "Confirmed!"}
-            {order.status === "preparing" && "Chef is Cooking"}
-            {order.status === "ready" && "Ready to Serve!"}
-            {order.status === "served" && "Served! Bon Appétit"}
-          </h2>
-          <p className="text-xs text-slate-400 font-light mt-1.5 flex items-center justify-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Updates in real-time</span>
-          </p>
+          {/* Overlapping Est. remaining time capsule */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+            className="-mt-5.5 z-10 bg-[#0e1629] text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 border border-[#1e293b]"
+          >
+            <Clock className="w-4 h-4 text-orange-500 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-wider font-sans">
+              {statusInfo.EstTime}
+            </span>
+          </motion.div>
         </div>
 
-        {/* Live Stepper Progress Timeline */}
-        <div className="bg-white border border-slate-200/50 rounded-2xl p-6 shadow-sm space-y-6">
-          <h3 className="font-extrabold text-sm text-slate-500 uppercase tracking-wider border-b border-slate-50 pb-2.5">
-            Timeline
-          </h3>
-          
-          <div className="relative pl-10 space-y-7">
-            {/* Stepper bar vertical lines */}
-            <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-slate-100 pointer-events-none"></div>
+        {/* Stepper Progress Timeline (Horizontal) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-3xl p-6 shadow-[0_10px_35px_rgba(0,0,0,0.03)] border border-slate-100"
+        >
+          <div className="relative flex items-center justify-between px-2 py-4">
+            {/* Background Gray Line */}
+            <div className="absolute left-6 right-6 top-[36px] -translate-y-1/2 h-0.5 bg-slate-100 pointer-events-none"></div>
             
-            {steps.map((st, idx) => {
-              const active = isStepActive(st.key);
-              const done = isStepDone(st.key);
+            {/* Active Orange Line */}
+            <div className="absolute left-6 right-6 top-[36px] -translate-y-1/2 h-0.5 pointer-events-none">
+              <motion.div 
+                className="h-full bg-orange-500"
+                initial={{ width: "0%" }}
+                animate={{ width: `${(statusInfo.StepIndex / 3) * 100}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              />
+            </div>
+
+            {/* Stepper Dots */}
+            {horizontalSteps.map((stepItem, idx) => {
+              const isCompleted = statusInfo.StepIndex > idx;
+              const isActive = statusInfo.StepIndex === idx;
+              const StepIcon = stepItem.icon;
               
               return (
-                <div key={st.key} className="relative flex items-start gap-4">
-                  {/* Stepper Bubble Indicator */}
+                <div key={idx} className="z-10 flex flex-col items-center text-center">
                   <div 
-                    className={`absolute -left-10 top-0.5 w-8.5 h-8.5 rounded-full flex items-center justify-center border-2 transition ${
-                      done 
-                        ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/10" 
-                        : active 
-                          ? "bg-white border-orange-500 text-orange-500 shadow-md shadow-orange-500/20 animate-pulse-glow" 
-                          : "bg-white border-slate-100 text-slate-350"
+                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                      isCompleted 
+                        ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                        : isActive 
+                          ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20 animate-pulse-glow" 
+                          : "bg-white border-slate-100 text-slate-300"
                     }`}
                   >
-                    {done ? (
-                      <Check className="w-4 h-4 text-white font-bold" />
+                    {isCompleted ? (
+                      <Check className="w-4 h-4 text-white stroke-[3px]" />
                     ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                      <StepIcon className={`w-4 h-4 ${isActive ? "text-white animate-pulse" : "text-slate-400"}`} />
                     )}
                   </div>
-
-                  {/* Stepper Text Details */}
-                  <div className="space-y-0.5">
-                    <h4 className={`font-bold text-sm leading-normal ${
-                      active ? "text-orange-500" : done ? "text-slate-800" : "text-slate-400"
+                  <div className="mt-3 space-y-0.5">
+                    <span className={`block text-[11px] font-black tracking-tight ${
+                      isActive || isCompleted ? "text-[#A14E1B]" : "text-slate-450"
                     }`}>
-                      {st.label}
-                    </h4>
-                    <p className={`text-[11px] font-medium leading-normal ${
-                      active ? "text-orange-400" : "text-slate-400"
-                    }`}>
-                      {st.desc}
-                    </p>
+                      {stepItem.label}
+                    </span>
+                    <span className="block text-[9px] text-slate-450 font-medium whitespace-nowrap">
+                      {isActive ? stepItem.activeSub : isCompleted ? stepItem.completedSub : stepItem.inactiveSub}
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Order Details Invoice summary */}
-        <div className="bg-white border border-slate-200/50 rounded-2xl p-5 shadow-sm space-y-4">
-          <h3 className="font-extrabold text-sm text-slate-500 uppercase tracking-wider border-b border-slate-50 pb-2">
-            Items Summary
+        {/* Quick Actions (Call Waiter & Order More) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="grid grid-cols-2 gap-4"
+        >
+          <motion.button
+            onClick={handleCallWaiter}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-slate-100 hover:bg-slate-200/80 rounded-3xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors duration-350 gap-2.5 border border-slate-200/30"
+          >
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.02)] text-orange-600">
+              <Bell className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold text-slate-700">Call Waiter</span>
+          </motion.button>
+
+          <Link href={`/scan/${activeOrder.tableCode || order.tableCode || ""}`} className="block w-full">
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-slate-100 hover:bg-slate-200/80 rounded-3xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors duration-350 gap-2.5 border border-slate-200/30 h-full w-full"
+            >
+              <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.02)] text-orange-600">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-slate-700">Order More</span>
+            </motion.div>
+          </Link>
+        </motion.div>
+
+        {/* Order Details: Items summary receipt */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-3xl p-6 shadow-[0_10px_35px_rgba(0,0,0,0.03)] border border-slate-100 space-y-4"
+        >
+          <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider border-b border-slate-50 pb-3 flex justify-between items-center">
+            <span>Your Table {activeOrder.tableName || activeOrder.tableNumber || order.tableName || order.tableNumber}</span>
+            <span className="text-[10px] text-slate-400 normal-case font-mono">Session Bill</span>
           </h3>
           
-          <div className="space-y-3">
-            {order.items.map((item: any, idx: number) => (
-              <div key={item.foodId || idx} className="flex justify-between items-center text-xs font-semibold">
-                <div className="min-w-0 pr-4">
-                  <span className="text-slate-700 block truncate">{item.name}</span>
-                  <span className="text-slate-400 font-medium block">Qty: {item.quantity} × ₹{item.price}</span>
+          <div className="space-y-6">
+            {/* Section 1: Previous Orders */}
+            {previousItems.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50/50 px-2.5 py-1.5 rounded-lg">
+                  <span>Previously Ordered</span>
+                  <span className="text-[#A14E1B]">Subtotal: ₹{previousSubtotal}</span>
                 </div>
-                <span className="text-slate-800 shrink-0">₹{item.price * item.quantity}</span>
+                <div className="divide-y divide-slate-50/50">
+                  {previousItems.map((item: any, idx: number) => (
+                    <div key={item.foodId || idx} className="flex justify-between items-center py-2.5 px-1">
+                      <div className="flex items-center gap-3 min-w-0 pr-4">
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-100"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-orange-50/5 flex items-center justify-center shrink-0 border border-orange-500/5 text-[#A14E1B]">
+                            <UtensilsCrossed className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <span className="text-slate-750 text-xs font-black block truncate">{item.name}</span>
+                          <span className="text-slate-400 text-[10px] font-bold block mt-0.5">
+                            x{item.quantity} {item.customizations && item.customizations.length > 0 ? `• ${item.customizations.join(", ")}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-slate-700 text-xs font-black shrink-0">₹{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+
+            {/* Section 2: This Order */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-[10px] text-slate-450 font-black uppercase tracking-wider bg-orange-500/5 text-orange-700 px-2.5 py-1.5 rounded-lg border border-orange-500/10">
+                <span>This Order</span>
+                <span>Subtotal: ₹{currentSubtotal}</span>
+              </div>
+              <div className="divide-y divide-slate-50/50">
+                {currentItems.map((item: any, idx: number) => (
+                  <div key={item.foodId || idx} className="flex justify-between items-center py-2.5 px-1">
+                    <div className="flex items-center gap-3 min-w-0 pr-4">
+                      {item.image ? (
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-100"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-xl bg-orange-500/5 flex items-center justify-center shrink-0 border border-orange-500/10 text-[#A14E1B]">
+                          <UtensilsCrossed className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <span className="text-slate-850 text-xs font-black block truncate">{item.name}</span>
+                        <span className="text-slate-400 text-[10px] font-bold block mt-0.5">
+                          x{item.quantity} {item.customizations && item.customizations.length > 0 ? `• ${item.customizations.join(", ")}` : ""}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-slate-800 text-xs font-black shrink-0">₹{item.price * item.quantity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 3: Ordered After */}
+            {subsequentItems.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50/50 px-2.5 py-1.5 rounded-lg">
+                  <span>Ordered After</span>
+                  <span className="text-[#A14E1B]">Subtotal: ₹{subsequentSubtotal}</span>
+                </div>
+                <div className="divide-y divide-slate-50/50">
+                  {subsequentItems.map((item: any, idx: number) => (
+                    <div key={item.foodId || idx} className="flex justify-between items-center py-2.5 px-1">
+                      <div className="flex items-center gap-3 min-w-0 pr-4">
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-100"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-orange-50/5 flex items-center justify-center shrink-0 border border-orange-500/5 text-[#A14E1B]">
+                            <UtensilsCrossed className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <span className="text-slate-750 text-xs font-black block truncate">{item.name}</span>
+                          <span className="text-slate-400 text-[10px] font-bold block mt-0.5">
+                            x{item.quantity} {item.customizations && item.customizations.length > 0 ? `• ${item.customizations.join(", ")}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-slate-700 text-xs font-black shrink-0">₹{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {order.customerNote && (
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[10px] text-slate-500 leading-normal font-medium italic">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[10px] text-slate-500 leading-normal font-medium italic mt-4">
               <strong>Instructions note:</strong> "{order.customerNote}"
             </div>
           )}
 
-          <div className="border-t border-slate-50 pt-3 flex justify-between items-center text-sm font-bold">
-            <span className="text-slate-500">Amount Paid</span>
-            <span className="text-slate-850 text-base">₹{order.totalAmount}</span>
+          <div className="border-t border-slate-100 pt-4 flex justify-between items-center text-sm font-bold">
+            <span className="text-slate-500">Total Session Amount</span>
+            <span className="text-[#A14E1B] text-lg font-black">₹{grandTotal}</span>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Order tracking footer */}
-        <div className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+        {/* Footer */}
+        <div className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1 py-4">
           <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
           Thank you for dining with us!
         </div>
 
       </div>
+
+      {/* Summon Waiter Live Toast Notification */}
+      <AnimatePresence>
+        {waiterCalled && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 bg-[#0e1629] text-white p-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 border border-slate-800"
+          >
+            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center shrink-0">
+              <Bell className="w-4 h-4 text-orange-400 animate-bounce" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs">Waiter Summoned!</h4>
+              <p className="text-[10px] text-slate-450 mt-0.5 leading-normal">
+                A server will be at your table shortly.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

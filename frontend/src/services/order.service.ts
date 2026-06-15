@@ -20,3 +20,8 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
   const response = await api.patch(`/orders/${orderId}/status`,{ status });
   return response.data.data;
 };
+
+export const getOrdersByTable = async (tableId: string) => {
+  const response = await api.get(`/orders/table/${tableId}`);
+  return response.data.data;
+};

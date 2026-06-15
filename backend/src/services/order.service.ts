@@ -179,12 +179,29 @@ export const getOrderById = async (
     );
   }
 
+  const table = await Table.findById(order.tableId);
+
+  const populatedItems = [];
+  for (const item of order.items) {
+    const foodItem = await FoodItem.findById(item.foodId);
+    populatedItems.push({
+      foodId: item.foodId,
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+      customizations: item.customizations,
+      image: foodItem?.image || "",
+    });
+  }
+
   return {
     id: order._id.toString(),
     orderNumber: order.orderNumber,
+    tableId: order.tableId.toString(),
+    tableCode: table?.tableCode || "",
     tableNumber: order.tableNumber,
     tableName: order.tableName,
-    items: order.items,
+    items: populatedItems,
     totalAmount: order.totalAmount,
     customerNote: order.customerNote,
     status: order.status,
@@ -216,4 +233,43 @@ export const getOrderById = async (
 
     createdAt: order.createdAt,
   };
-}
+};
+
+export const getOrdersByTable = async (tableId: string) => {
+  const table = await Table.findById(tableId);
+  const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+  const orders = await Order.find({
+    tableId,
+    createdAt: { $gte: fourHoursAgo },
+  }).sort({ createdAt: 1 });
+
+  const result = [];
+  for (const order of orders) {
+    const populatedItems = [];
+    for (const item of order.items) {
+      const foodItem = await FoodItem.findById(item.foodId);
+      populatedItems.push({
+        foodId: item.foodId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        customizations: item.customizations,
+        image: foodItem?.image || "",
+      });
+    }
+    result.push({
+      id: order._id.toString(),
+      orderNumber: order.orderNumber,
+      tableId: order.tableId.toString(),
+      tableCode: table?.tableCode || "",
+      tableNumber: order.tableNumber,
+      tableName: order.tableName,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      items: populatedItems,
+      customerNote: order.customerNote,
+      createdAt: order.createdAt,
+    });
+  }
+  return result;
+};

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import { createOrderSchema, updateOrderStatusSchema } from "../validators/order.validator";
-import { createOrder, getOrdersByRestaurant , getOrderById, updateOrderStatus } from "../services/order.service";
+import { createOrder, getOrdersByRestaurant , getOrderById, updateOrderStatus, getOrdersByTable } from "../services/order.service";
 
 export const create = async (
   req: Request,
@@ -104,6 +104,31 @@ export const getOne = async (
     });
   } catch (error) {
     return res.status(404).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+    });
+  }
+};
+
+export const getByTable = async (
+  req: Request<{ tableId: string }>,
+  res: Response
+) => {
+  try {
+    const orders =
+      await getOrdersByTable(
+        req.params.tableId
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    return res.status(400).json({
       success: false,
       error:
         error instanceof Error
