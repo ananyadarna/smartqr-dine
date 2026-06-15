@@ -158,10 +158,12 @@ export default function OnboardingPage() {
         {/* Stepper Indicators */}
         <div className="flex justify-between items-center mb-8 px-6 relative">
           <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-0.5 bg-slate-800 pointer-events-none"></div>
-          <div 
-            className="absolute left-10 top-1/2 -translate-y-1/2 h-0.5 bg-orange-500 transition-all duration-300"
-            style={{ width: `${(step - 1) * 50}%` }}
-          ></div>
+          <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-0.5 pointer-events-none">
+            <div 
+              className="h-full bg-orange-500 transition-all duration-300"
+              style={{ width: `${(step - 1) * 50}%` }}
+            ></div>
+          </div>
 
           {[1, 2, 3].map((s) => (
             <div key={s} className="z-10 flex flex-col items-center">
