@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 
-import { registerSchema, loginSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema, googleAuthSchema } from "../validators/auth.validator";
 
-import { registerUser,  loginUser } from "../services/auth.service";
+import { registerUser,  loginUser, loginOrRegisterWithGoogle } from "../services/auth.service";
 
 export const register = async (
   req: Request,
@@ -79,6 +79,33 @@ export const getProfile = async (
     return res.status(500).json({
       success: false,
       error: "Server error",
+    });
+  }
+};
+
+export const googleLogin = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { credential } =
+      googleAuthSchema.parse(req.body);
+
+    const result =
+      await loginOrRegisterWithGoogle(credential);
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
     });
   }
 };

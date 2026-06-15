@@ -14,3 +14,8 @@ export const getProfile = async () => {
   const response = await api.get("/auth/profile");
   return response.data.data;
 };
+
+export const loginWithGoogle = async (credential: string) => {
+  const response = await api.post("/auth/google", { credential });
+  return response.data.data;
+};
