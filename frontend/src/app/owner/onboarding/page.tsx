@@ -287,13 +287,15 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="pt-4 flex justify-end">
-                  <button
+                  <motion.button
                     onClick={handleNextStep}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 transition flex items-center gap-1.5"
                   >
                     Next Step
                     <Check className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -320,10 +322,13 @@ export default function OnboardingPage() {
                     const Icon = t.icon;
                     const isSelected = theme === t.id;
                     return (
-                      <button
+                      <motion.button
                         key={t.id}
                         onClick={() => setTheme(t.id)}
-                        className={`text-left p-4 rounded-xl border cursor-pointer transition flex gap-4 ${
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        className={`text-left p-4 rounded-xl border cursor-pointer flex gap-4 transition ${
                           isSelected 
                             ? "bg-slate-900 border-orange-500 shadow-md shadow-orange-500/10" 
                             : "bg-slate-950 border-slate-850 hover:border-slate-800"
@@ -340,25 +345,29 @@ export default function OnboardingPage() {
                             {t.desc}
                           </p>
                         </div>
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
 
                 <div className="pt-4 flex justify-between">
-                  <button
+                  <motion.button
                     onClick={handlePrevStep}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     className="border border-slate-800 hover:bg-slate-900 text-slate-300 font-semibold px-6 py-3 rounded-xl cursor-pointer transition"
                   >
                     Back
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     onClick={handleNextStep}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 transition flex items-center gap-1.5"
                   >
                     Next Step
                     <Check className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -401,16 +410,20 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="pt-4 flex justify-between max-w-md mx-auto">
-                  <button
+                  <motion.button
                     onClick={handlePrevStep}
                     disabled={loading}
+                    whileHover={loading ? {} : { scale: 1.02 }}
+                    whileTap={loading ? {} : { scale: 0.98 }}
                     className="border border-slate-800 hover:bg-slate-900 text-slate-300 font-semibold px-6 py-3 rounded-xl cursor-pointer transition"
                   >
                     Back
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     onClick={handleComplete}
                     disabled={loading}
+                    whileHover={loading ? {} : { scale: 1.02 }}
+                    whileTap={loading ? {} : { scale: 0.98 }}
                     className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold px-8 py-3 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 transition flex items-center gap-1.5"
                   >
                     {loading ? (
@@ -421,7 +434,7 @@ export default function OnboardingPage() {
                         <Check className="w-4 h-4" />
                       </>
                     )}
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
