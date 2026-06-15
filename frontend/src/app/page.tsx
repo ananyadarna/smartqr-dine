@@ -17,6 +17,65 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
 
+// 3D Parallax Tilt Feature Card Component
+function FeatureCard({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xc = rect.width / 2;
+    const yc = rect.height / 2;
+    setRotateX((yc - y) / 8);
+    setRotateY((x - xc) / 8);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setRotateX(0);
+    setRotateY(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        transform: isHovered
+          ? `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.025, 1.025, 1.025)`
+          : 'perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+        transition: isHovered ? 'none' : 'transform 0.5s ease',
+        transformStyle: "preserve-3d"
+      }}
+      className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300 cursor-default select-none shadow-sm"
+    >
+      <div 
+        style={{ transform: "translateZ(30px)" }}
+        className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-110 transition duration-300"
+      >
+        <Icon className="w-6 h-6" />
+      </div>
+      <h3 
+        style={{ transform: "translateZ(20px)" }}
+        className="text-xl font-bold mb-3 text-slate-200 group-hover:text-white transition"
+      >
+        {title}
+      </h3>
+      <p 
+        style={{ transform: "translateZ(10px)" }}
+        className="text-slate-400 font-light text-sm leading-relaxed"
+      >
+        {description}
+      </p>
+    </motion.div>
+  );
+}
+
 export default function LandingPage() {
   const user = useAuthStore((state) => state.user);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -474,71 +533,36 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-105 transition">
-                <Smartphone className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Interactive Mobile Menu</h3>
-              <p className="text-slate-400 font-light text-sm leading-relaxed">
-                Customers scan a table QR code and browse beautiful categories, rich descriptions, and add items with animations.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-105 transition">
-                <Clock className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Live Order Feeds</h3>
-              <p className="text-slate-400 font-light text-sm leading-relaxed">
-                Kitchen dashboards update in real-time using Socket.io. Chime notifications alert chefs the exact second an order lands.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-105 transition">
-                <QrCode className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">QR Code Architect</h3>
-              <p className="text-slate-400 font-light text-sm leading-relaxed">
-                Generate elegant, high-contrast QR codes for each dining table. Download card overlays ready for printing.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-105 transition">
-                <Layers className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Live Order timeline</h3>
-              <p className="text-slate-400 font-light text-sm leading-relaxed">
-                Keep diners informed. The customer tracking screen shows a stepper reflecting order receipt, cooking, ready, and served.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-105 transition">
-                <BarChart3 className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Rich Business Analytics</h3>
-              <p className="text-slate-400 font-light text-sm leading-relaxed">
-                Track revenue, total orders, and top-selling items using visual dashboards. Understand peek traffic hours.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="border border-slate-800 bg-[#0a0f1d] hover:border-orange-500/30 p-8 rounded-2xl group transition duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-105 transition">
-                <CheckCircle className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Brand Customizer</h3>
-              <p className="text-slate-400 font-light text-sm leading-relaxed">
-                Set restaurant logo, banner headers, contact settings, and custom presets (Modern, Cafe, Luxury, Fastfood).
-              </p>
-            </div>
+            <FeatureCard 
+              icon={Smartphone}
+              title="Interactive Mobile Menu"
+              description="Customers scan a table QR code and browse beautiful categories, rich descriptions, and add items with animations."
+            />
+            <FeatureCard 
+              icon={Clock}
+              title="Live Order Feeds"
+              description="Kitchen dashboards update in real-time using Socket.io. Chime notifications alert chefs the exact second an order lands."
+            />
+            <FeatureCard 
+              icon={QrCode}
+              title="QR Code Architect"
+              description="Generate elegant, high-contrast QR codes for each dining table. Download card overlays ready for printing."
+            />
+            <FeatureCard 
+              icon={Layers}
+              title="Live Order Timeline"
+              description="Keep diners informed. The customer tracking screen shows a stepper reflecting order receipt, cooking, ready, and served."
+            />
+            <FeatureCard 
+              icon={BarChart3}
+              title="Rich Business Analytics"
+              description="Track revenue, total orders, and top-selling items using visual dashboards. Understand peek traffic hours."
+            />
+            <FeatureCard 
+              icon={CheckCircle}
+              title="Brand Customizer"
+              description="Set restaurant logo, banner headers, contact settings, and custom presets (Modern, Cafe, Luxury, Fastfood)."
+            />
           </div>
         </div>
       </section>
