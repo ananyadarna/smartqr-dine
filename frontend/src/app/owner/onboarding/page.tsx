@@ -325,13 +325,33 @@ export default function OnboardingPage() {
                       <motion.button
                         key={t.id}
                         onClick={() => setTheme(t.id)}
-                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileHover={{ 
+                          scale: 1.03, 
+                          y: -2,
+                          borderColor: "#f97316"
+                        }}
                         whileTap={{ scale: 0.97 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                        className={`text-left p-4 rounded-xl border cursor-pointer flex gap-4 transition ${
+                        animate={isSelected ? {
+                          borderColor: ["#f97316", "#e04f16", "#f97316"],
+                          boxShadow: [
+                            "0 0 10px rgba(249, 115, 22, 0.15)",
+                            "0 0 20px rgba(249, 115, 22, 0.35)",
+                            "0 0 10px rgba(249, 115, 22, 0.15)"
+                          ],
+                        } : {
+                          borderColor: "#1e293b",
+                          boxShadow: "0 0 0px rgba(0, 0, 0, 0)"
+                        }}
+                        transition={{
+                          borderColor: isSelected ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : { type: "spring", stiffness: 400, damping: 17 },
+                          boxShadow: isSelected ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : { type: "spring", stiffness: 400, damping: 17 },
+                          scale: { type: "spring", stiffness: 400, damping: 17 },
+                          y: { type: "spring", stiffness: 400, damping: 17 }
+                        }}
+                        className={`text-left p-4 rounded-xl border border-slate-800 cursor-pointer flex gap-4 transition-colors duration-350 ${
                           isSelected 
-                            ? "bg-slate-900 border-orange-500 shadow-md shadow-orange-500/10" 
-                            : "bg-slate-950 border-slate-850 hover:border-slate-800"
+                            ? "bg-slate-900/80" 
+                            : "bg-slate-950"
                         }`}
                       >
                         <div className={`w-10 h-10 rounded-lg bg-gradient-to-tr ${t.color} flex items-center justify-center text-white shrink-0 shadow-md`}>
