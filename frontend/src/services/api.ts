@@ -3,7 +3,11 @@ import { useAuthStore } from "@/stores/auth.store";
 
 const getBaseURL = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+    let url = process.env.NEXT_PUBLIC_API_URL;
+    if (!url.match(/\/api\/?$/)) {
+      url = url.replace(/\/+$/, "") + "/api";
+    }
+    return url;
   }
   if (typeof window !== "undefined") {
     return `http://${window.location.hostname}:5000/api`;
