@@ -304,6 +304,9 @@ export default function OrderPage({ params }: PageProps) {
   const handleCallWaiter = () => {
     if (!order) return;
 
+    // Play chime sound locally
+    playStatusChime();
+
     socket.emit("call_waiter", {
       restaurantId: order.restaurantId,
       tableId: order.tableId,
@@ -626,9 +629,9 @@ export default function OrderPage({ params }: PageProps) {
               <Bell className="w-4 h-4 text-orange-400 animate-bounce" />
             </div>
             <div>
-              <h4 className="font-bold text-xs">Waiter Summoned!</h4>
-              <p className="text-[10px] text-slate-450 mt-0.5 leading-normal">
-                A server will be at your table shortly.
+              <h4 className="font-bold text-xs">Waiter Summoned for Table {order.tableNumber}!</h4>
+              <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                A dining host will be at your table shortly.
               </p>
             </div>
           </motion.div>
