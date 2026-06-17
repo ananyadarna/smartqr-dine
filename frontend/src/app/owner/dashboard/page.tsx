@@ -93,6 +93,12 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [animateBell, setAnimateBell] = useState(false);
   const [waiterCalls, setWaiterCalls] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !n.read).length;
+  }, [notifications]);
 
   // Get current formatted date for header
   const formattedDate = useMemo(() => {
@@ -146,6 +152,20 @@ export default function DashboardPage() {
       setAnimateBell(true);
       setTimeout(() => setAnimateBell(false), 1000);
 
+      // Add to notifications list
+      setNotifications((prev) => [
+        {
+          id: `order-${data.orderId}`,
+          type: "order",
+          title: "New Order Received",
+          message: `Order #${data.orderNumber.split("-")[1]?.slice(-6) || data.orderNumber} placed for Table ${data.tableNumber}.`,
+          timestamp: new Date(),
+          read: false,
+          data: data,
+        },
+        ...prev,
+      ]);
+
       // Show toast banner
       setToast({
         id: data.orderId,
@@ -171,6 +191,20 @@ export default function DashboardPage() {
       setAnimateBell(true);
       setTimeout(() => setAnimateBell(false), 1000);
 
+      // Add to notifications list
+      setNotifications((prev) => [
+        {
+          id: `waiter-${data.tableId}-${Date.now()}`,
+          type: "waiter",
+          title: "Waiter Summoned",
+          message: `Table ${data.tableNumber} is calling for service.`,
+          timestamp: new Date(),
+          read: false,
+          data: data,
+        },
+        ...prev,
+      ]);
+
       setWaiterCalls((prev) => {
         if (prev.some((call) => call.tableId === data.tableId)) return prev;
         return [...prev, { ...data, timestamp: new Date() }];
@@ -180,6 +214,13 @@ export default function DashboardPage() {
     // Listen for waiter resolution from other devices
     const handleWaiterResolved = (data: any) => {
       setWaiterCalls((prev) => prev.filter((call) => call.tableId !== data.tableId));
+      setNotifications((prev) =>
+        prev.map((n) => 
+          n.type === "waiter" && n.data.tableId === data.tableId 
+            ? { ...n, read: true, resolved: true } 
+            : n
+        )
+      );
     };
 
     socket.on("new_order", handleNewOrder);
@@ -199,6 +240,21 @@ export default function DashboardPage() {
   const handleResolveWaiter = (tableId: string) => {
     socket.emit("resolve_waiter", { restaurantId, tableId });
     setWaiterCalls((prev) => prev.filter((call) => call.tableId !== tableId));
+    setNotifications((prev) =>
+      prev.map((n) => 
+        n.type === "waiter" && n.data.tableId === tableId 
+          ? { ...n, read: true, resolved: true } 
+          : n
+      )
+    );
+  };
+
+  const handleMarkAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleClearNotifications = () => {
+    setNotifications([]);
   };
 
   // Auto-hide toast notification after 5 seconds
@@ -544,15 +600,125 @@ export default function DashboardPage() {
       <div className="flex justify-end items-center relative z-10 py-1">
         {/* User / Profile Details */}
         <div className="flex items-center gap-5 shrink-0 justify-end">
-          {/* Bell Icon with jiggle animation */}
-          <motion.button 
-            animate={animateBell ? { rotate: [-10, 10, -10, 10, 0] } : {}}
-            transition={{ duration: 0.5 }}
-            className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-slate-650 transition relative focus:outline-none cursor-pointer"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#A14E1B]"></span>
-          </motion.button>
+          {/* Bell Icon with notification dropdown */}
+          <div className="relative">
+            <motion.button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              animate={animateBell ? { rotate: [-10, 10, -10, 10, 0] } : {}}
+              transition={{ duration: 0.5 }}
+              className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-slate-650 transition relative focus:outline-none cursor-pointer"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-[#A14E1B] text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border border-white">
+                  {unreadCount}
+                </span>
+              )}
+            </motion.button>
+
+            {/* Click-away backdrop overlay */}
+            {showNotifications && (
+              <div 
+                className="fixed inset-0 z-40 cursor-default" 
+                onClick={() => setShowNotifications(false)}
+              />
+            )}
+
+            {/* Dropdown Menu card */}
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 space-y-3"
+                >
+                  {/* Header */}
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-150">
+                    <span className="font-extrabold text-sm text-slate-800">Notifications</span>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-[10px] text-orange-500 hover:text-orange-700 font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearNotifications}
+                          className="text-[10px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body list */}
+                  <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-100 pr-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 text-xs font-light space-y-2">
+                        <Bell className="w-8 h-8 text-slate-200 mx-auto" />
+                        <p>No new notifications.</p>
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div 
+                          key={n.id} 
+                          className={`py-3 flex items-start gap-3 transition rounded-lg px-2 hover:bg-slate-50 ${
+                            !n.read ? "bg-orange-50/20" : ""
+                          }`}
+                        >
+                          {/* Type Indicator Icon */}
+                          <div className={`p-2 rounded-xl shrink-0 ${
+                            n.type === "order" 
+                              ? "bg-orange-50 text-orange-600" 
+                              : "bg-[#A14E1B]/10 text-[#A14E1B]"
+                          }`}>
+                            {n.type === "order" ? <ShoppingBag className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                          </div>
+
+                          {/* Message Body */}
+                          <div className="flex-1 space-y-0.5 min-w-0">
+                            <div className="flex justify-between items-baseline gap-2">
+                              <span className="font-bold text-slate-800 text-xs truncate">{n.title}</span>
+                              <span className="text-[8px] text-slate-400 font-bold shrink-0">
+                                {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-normal font-light">
+                              {n.message}
+                            </p>
+                            
+                            {/* Special Actions per Type */}
+                            {n.type === "waiter" && !n.resolved && (
+                              <button
+                                onClick={() => {
+                                  handleResolveWaiter(n.data.tableId);
+                                  // Mark notification resolved
+                                  setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, resolved: true, read: true } : item));
+                                }}
+                                className="mt-1.5 text-[9px] bg-orange-500 text-white font-bold px-2 py-0.5 rounded-md hover:bg-orange-600 transition cursor-pointer"
+                              >
+                                Send Waiter (Resolve)
+                              </button>
+                            )}
+                            {n.type === "waiter" && n.resolved && (
+                              <span className="inline-block mt-1.5 text-[8px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-md">
+                                Resolved
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <div className="flex items-center gap-3">
             <div className="text-right">
