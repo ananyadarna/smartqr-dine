@@ -597,11 +597,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Floating Top Navbar Header (Clean floating components matching mockup) */}
-      <div className="flex justify-end items-center relative z-10 py-1">
+      <div className="flex justify-end items-center relative z-[60] py-1">
         {/* User / Profile Details */}
         <div className="flex items-center gap-5 shrink-0 justify-end">
           {/* Bell Icon with notification dropdown */}
-          <div className="relative">
+          <div className="relative z-50">
             <motion.button 
               onClick={() => setShowNotifications(!showNotifications)}
               animate={animateBell ? { rotate: [-10, 10, -10, 10, 0] } : {}}
@@ -740,7 +740,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Page Header Greeting */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-1 relative z-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-1 relative z-0">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Performance Overview
@@ -772,7 +772,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Metrics Row Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-0">
         {cards.map((c, i) => {
           const Icon = c.icon;
           return (
@@ -806,7 +806,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Middle Grid: Revenue Growth & Floor Map */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-0">
         
         {/* Revenue Growth Chart */}
         <motion.div 
@@ -906,7 +906,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom Grid: Active Orders & Popular Dishes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-0">
         
         {/* Left: Active Orders Feed */}
         <motion.div 
