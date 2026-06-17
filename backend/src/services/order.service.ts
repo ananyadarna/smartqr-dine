@@ -228,6 +228,7 @@ export const getOrderById = async (
   return {
     id: order._id.toString(),
     orderNumber: order.orderNumber,
+    restaurantId: order.restaurantId.toString(),
     tableId: order.tableId.toString(),
     tableCode: order.tableCode || table?.tableCode || "",
     tableSessionId: order.tableSessionId || "",
