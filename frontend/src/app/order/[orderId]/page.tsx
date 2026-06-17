@@ -124,6 +124,26 @@ export default function OrderPage({ params }: PageProps) {
     };
   }, [order, tableOrders]);
 
+  // Handle waiter resolved events and join socket room
+  useEffect(() => {
+    if (!order) return;
+
+    socket.emit("join_restaurant", order.restaurantId);
+
+    const handleWaiterResolved = (data: any) => {
+      console.log("Guest received waiter resolved:", data);
+      if (data.tableId === order.tableId) {
+        setWaiterCalled(false);
+      }
+    };
+
+    socket.on("waiter_resolved", handleWaiterResolved);
+
+    return () => {
+      socket.off("waiter_resolved", handleWaiterResolved);
+    };
+  }, [order]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 flex items-center justify-center p-12">
@@ -280,26 +300,6 @@ export default function OrderPage({ params }: PageProps) {
       inactiveSub: "--:--",
     },
   ];
-
-  // Handle waiter resolved events and join socket room
-  useEffect(() => {
-    if (!order) return;
-
-    socket.emit("join_restaurant", order.restaurantId);
-
-    const handleWaiterResolved = (data: any) => {
-      console.log("Guest received waiter resolved:", data);
-      if (data.tableId === order.tableId) {
-        setWaiterCalled(false);
-      }
-    };
-
-    socket.on("waiter_resolved", handleWaiterResolved);
-
-    return () => {
-      socket.off("waiter_resolved", handleWaiterResolved);
-    };
-  }, [order]);
 
   const handleCallWaiter = () => {
     if (!order) return;
