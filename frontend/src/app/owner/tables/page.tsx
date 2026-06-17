@@ -11,7 +11,10 @@ import {
   RefreshCw, 
   TableProperties, 
   Trash2,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  X
 } from "lucide-react";
 import { getTablesByRestaurant, createTable, deleteTable, updateTable, clearTableSession } from "@/services/table.service";
 import { generateQR } from "@/services/qr.service";
@@ -29,6 +32,45 @@ export default function TablesManagementPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [tableNum, setTableNum] = useState("");
   const [tableName, setTableName] = useState("");
+
+  // Custom alert / confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    actionType: "clear" | "delete" | null;
+    tableData: any;
+  }>({
+    show: false,
+    title: "",
+    message: "",
+    actionType: null,
+    tableData: null,
+  });
+
+  // Custom toast notification state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error" | "info";
+  }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ show: true, message, type });
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast((prev) => ({ ...prev, show: false }));
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
 
   const loadTables = async () => {
     if (!restaurantId) return;
@@ -71,6 +113,7 @@ export default function TablesManagementPage() {
       setTables((prev) => [...prev, completeTable].sort((a,b) => a.tableNumber - b.tableNumber));
       setTableNum("");
       setShowAddModal(false);
+      showToast(`Table ${num} added successfully!`, "success");
     } catch (err: any) {
       setError(err.response?.data?.error || "Table already exists or creation failed.");
     } finally {
@@ -85,8 +128,10 @@ export default function TablesManagementPage() {
       setTables((prev) => 
         prev.map((t) => (t.id === tableId ? { ...t, qrCodeUrl: qrData.qrCodeUrl } : t))
       );
+      showToast("QR code regenerated successfully!", "success");
     } catch (err) {
       console.error("Failed to regenerate QR:", err);
+      showToast("Failed to regenerate QR code.", "error");
     }
   };
 
@@ -97,32 +142,58 @@ export default function TablesManagementPage() {
       setTables((prev) => 
         prev.map((t) => (t.id === table.id ? { ...t, isActive: updated.isActive } : t))
       );
+      showToast(`Table set to ${updated.isActive ? "Active" : "Inactive"}.`, "info");
     } catch (err) {
       console.error("Failed to toggle table status:", err);
+      showToast("Failed to toggle table status.", "error");
     }
   };
 
-  // Delete table
-  const handleDeleteTable = async (tableId: string) => {
-    if (!confirm("Are you sure you want to delete this table? Dynamically generated QR codes will stop redirecting!")) return;
-    try {
-      await deleteTable(tableId);
-      setTables((prev) => prev.filter((t) => t.id !== tableId));
-    } catch (err) {
-      console.error("Failed to delete table:", err);
-    }
+  // Trigger custom delete confirmation modal
+  const handleDeleteTableClick = (tableId: string) => {
+    setConfirmModal({
+      show: true,
+      title: "Delete Table",
+      message: "Are you sure you want to delete this table? Dynamically generated QR codes will stop redirecting!",
+      actionType: "delete",
+      tableData: tableId,
+    });
   };
 
-  // Clear table session (New Guest)
-  const handleClearTable = async (table: any) => {
-    if (!confirm(`Are you sure you want to clear ${table.name}? This will archive the current customer bill and start a fresh session for the next guests.`)) return;
-    try {
-      await clearTableSession(table.id);
-      alert(`${table.name} cleared successfully! Any new scans/orders will start a fresh bill.`);
-      loadTables();
-    } catch (err) {
-      console.error("Failed to clear table session:", err);
-      alert("Failed to clear table session.");
+  // Trigger custom clear confirmation modal
+  const handleClearTableClick = (table: any) => {
+    setConfirmModal({
+      show: true,
+      title: "Clear Table Session",
+      message: `Are you sure you want to clear ${table.name}? This will archive the current customer bill and start a fresh session for the next guests.`,
+      actionType: "clear",
+      tableData: table,
+    });
+  };
+
+  // Execute confirmation action
+  const handleConfirmAction = async () => {
+    const { actionType, tableData } = confirmModal;
+    setConfirmModal((prev) => ({ ...prev, show: false }));
+
+    if (actionType === "delete") {
+      try {
+        await deleteTable(tableData);
+        setTables((prev) => prev.filter((t) => t.id !== tableData));
+        showToast("Table deleted successfully!", "success");
+      } catch (err) {
+        console.error("Failed to delete table:", err);
+        showToast("Failed to delete table.", "error");
+      }
+    } else if (actionType === "clear") {
+      try {
+        await clearTableSession(tableData.id);
+        showToast(`${tableData.name} cleared successfully! Any new orders will start a fresh bill.`, "success");
+        loadTables();
+      } catch (err) {
+        console.error("Failed to clear table session:", err);
+        showToast("Failed to clear table session.", "error");
+      }
     }
   };
 
@@ -230,8 +301,8 @@ export default function TablesManagementPage() {
               {/* Action Buttons */}
               <div className="flex justify-between items-center pt-3 border-t border-slate-100">
                 <button
-                  onClick={() => handleDeleteTable(table.id)}
-                  className="text-red-400 hover:text-red-650 p-1.5 rounded-lg hover:bg-red-50 transition"
+                  onClick={() => handleDeleteTableClick(table.id)}
+                  className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
                   title="Delete Table"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -239,7 +310,7 @@ export default function TablesManagementPage() {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleClearTable(table)}
+                    onClick={() => handleClearTableClick(table)}
                     className="p-1.5 rounded-lg border border-slate-200 text-[#A14E1B] hover:bg-orange-50 hover:text-orange-700 transition flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
                     title="Clear Session / Start New Guest Bill"
                   >
@@ -340,6 +411,88 @@ export default function TablesManagementPage() {
               </form>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Dialog */}
+      <AnimatePresence>
+        {confirmModal.show && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            ></motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 relative z-10 space-y-5 border border-slate-100"
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-2xl ${
+                  confirmModal.actionType === "delete" 
+                    ? "bg-red-50 text-red-500" 
+                    : "bg-orange-50 text-orange-500"
+                }`}>
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <h3 className="text-lg font-bold text-slate-900">{confirmModal.title}</h3>
+                  <p className="text-slate-500 text-sm font-light leading-relaxed">
+                    {confirmModal.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))}
+                  className="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition text-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAction}
+                  className={`px-6 py-2.5 font-bold text-white rounded-xl shadow-lg transition text-sm cursor-pointer ${
+                    confirmModal.actionType === "delete"
+                      ? "bg-red-500 hover:bg-red-600 shadow-red-500/15"
+                      : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/15"
+                  }`}
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-55 flex items-center gap-3 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-xl border border-slate-800 max-w-sm"
+          >
+            {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
+            {toast.type === "error" && <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />}
+            {toast.type === "info" && <Sparkles className="w-5 h-5 text-sky-400 shrink-0" />}
+            <p className="text-xs font-semibold text-slate-100 flex-1">{toast.message}</p>
+            <button 
+              onClick={() => setToast((prev) => ({ ...prev, show: false }))}
+              className="text-slate-400 hover:text-white p-0.5 rounded-md hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
