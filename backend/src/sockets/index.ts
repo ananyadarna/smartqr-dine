@@ -23,6 +23,16 @@ export const initializeSocket = (
       }
     );
 
+    // Call waiter notification channel
+    socket.on("call_waiter", (data: { restaurantId: string; tableId: string; tableNumber: number; tableName: string }) => {
+      io.to(data.restaurantId).emit("waiter_called", data);
+    });
+
+    // Resolve waiter notification channel
+    socket.on("resolve_waiter", (data: { restaurantId: string; tableId: string }) => {
+      io.to(data.restaurantId).emit("waiter_resolved", data);
+    });
+
     socket.on("disconnect", () => {
       console.log(
         `Socket Disconnected: ${socket.id}`

@@ -281,11 +281,37 @@ export default function OrderPage({ params }: PageProps) {
     },
   ];
 
+  // Handle waiter resolved events and join socket room
+  useEffect(() => {
+    if (!order) return;
+
+    socket.emit("join_restaurant", order.restaurantId);
+
+    const handleWaiterResolved = (data: any) => {
+      console.log("Guest received waiter resolved:", data);
+      if (data.tableId === order.tableId) {
+        setWaiterCalled(false);
+      }
+    };
+
+    socket.on("waiter_resolved", handleWaiterResolved);
+
+    return () => {
+      socket.off("waiter_resolved", handleWaiterResolved);
+    };
+  }, [order]);
+
   const handleCallWaiter = () => {
+    if (!order) return;
+
+    socket.emit("call_waiter", {
+      restaurantId: order.restaurantId,
+      tableId: order.tableId,
+      tableNumber: order.tableNumber,
+      tableName: order.tableName,
+    });
+
     setWaiterCalled(true);
-    setTimeout(() => {
-      setWaiterCalled(false);
-    }, 4000);
   };
 
   return (

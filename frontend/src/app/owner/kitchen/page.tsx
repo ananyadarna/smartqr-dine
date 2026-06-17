@@ -13,7 +13,8 @@ import {
   RotateCw, 
   ShoppingBag, 
   Sparkles, 
-  Volume2 
+  Volume2,
+  Users
 } from "lucide-react";
 import { getOrdersByRestaurant, updateOrderStatus } from "@/services/order.service";
 import { useAuthStore } from "@/stores/auth.store";
@@ -62,6 +63,7 @@ export default function KitchenDashboardPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOrderAlert, setNewOrderAlert] = useState(false);
+  const [waiterCalls, setWaiterCalls] = useState<any[]>([]);
 
   // Fetch initial active orders
   const loadOrders = async () => {
@@ -90,24 +92,40 @@ export default function KitchenDashboardPage() {
 
     const handleNewOrder = (data: any) => {
       console.log("Kitchen received live order:", data);
-      
-      // Play high chime alert
       playKitchenChime();
-      
-      // Trigger visually animated alert banner
       setNewOrderAlert(true);
       setTimeout(() => setNewOrderAlert(false), 5000);
-
-      // Reload list to fetch full items of order
       loadOrders();
     };
 
+    const handleWaiterCalled = (data: any) => {
+      console.log("Kitchen received waiter call:", data);
+      playKitchenChime();
+      setWaiterCalls((prev) => {
+        if (prev.some((call) => call.tableId === data.tableId)) return prev;
+        return [...prev, { ...data, timestamp: new Date() }];
+      });
+    };
+
+    const handleWaiterResolved = (data: any) => {
+      setWaiterCalls((prev) => prev.filter((call) => call.tableId !== data.tableId));
+    };
+
     socket.on("new_order", handleNewOrder);
+    socket.on("waiter_called", handleWaiterCalled);
+    socket.on("waiter_resolved", handleWaiterResolved);
 
     return () => {
       socket.off("new_order", handleNewOrder);
+      socket.off("waiter_called", handleWaiterCalled);
+      socket.off("waiter_resolved", handleWaiterResolved);
     };
   }, [restaurantId]);
+
+  const handleResolveWaiter = (tableId: string) => {
+    socket.emit("resolve_waiter", { restaurantId, tableId });
+    setWaiterCalls((prev) => prev.filter((call) => call.tableId !== tableId));
+  };
 
   // Progress order status
   const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
@@ -259,6 +277,45 @@ export default function KitchenDashboardPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* Waiter Calls Notifications Panel */}
+      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        <AnimatePresence>
+          {waiterCalls.map((call) => (
+            <motion.div
+              key={call.tableId}
+              initial={{ opacity: 0, x: -100, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -100, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="bg-[#0a0f1d] border border-orange-500/40 rounded-2xl p-4 shadow-2xl shadow-orange-500/10 text-white flex items-start gap-4 pointer-events-auto"
+            >
+              <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0 animate-pulse">
+                <Users className="w-5 h-5 text-orange-500" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-extrabold text-sm text-orange-500 font-mono uppercase tracking-wider">WAITER SUMMONED</span>
+                  <span className="text-[10px] bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded-full font-bold">
+                    Table {call.tableNumber}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-350 font-light mt-1">
+                  Customer at {call.tableName || `Table ${call.tableNumber}`} requires assistance.
+                </p>
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => handleResolveWaiter(call.tableId)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded-lg text-[10px] cursor-pointer transition shadow-md shadow-orange-500/15"
+                  >
+                    Resolve (Dismiss)
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

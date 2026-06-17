@@ -92,6 +92,7 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [animateBell, setAnimateBell] = useState(false);
+  const [waiterCalls, setWaiterCalls] = useState<any[]>([]);
 
   // Get current formatted date for header
   const formattedDate = useMemo(() => {
@@ -116,8 +117,8 @@ export default function DashboardPage() {
       setTables(tablesData);
       setAnalytics(analyticsData);
       setAllOrders(allOrdersList);
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
+    } catch (err) {
+      console.error("Failed to load dashboard data:", err);
     } finally {
       setLoading(false);
     }
@@ -163,14 +164,42 @@ export default function DashboardPage() {
       loadDashboardData();
     };
 
+    // Listen for waiter summons
+    const handleWaiterCalled = (data: any) => {
+      console.log("Socket received waiter call:", data);
+      playChime();
+      setAnimateBell(true);
+      setTimeout(() => setAnimateBell(false), 1000);
+
+      setWaiterCalls((prev) => {
+        if (prev.some((call) => call.tableId === data.tableId)) return prev;
+        return [...prev, { ...data, timestamp: new Date() }];
+      });
+    };
+
+    // Listen for waiter resolution from other devices
+    const handleWaiterResolved = (data: any) => {
+      setWaiterCalls((prev) => prev.filter((call) => call.tableId !== data.tableId));
+    };
+
     socket.on("new_order", handleNewOrder);
     socket.on("order_status_updated", handleStatusUpdate);
+    socket.on("waiter_called", handleWaiterCalled);
+    socket.on("waiter_resolved", handleWaiterResolved);
 
     return () => {
       socket.off("new_order", handleNewOrder);
       socket.off("order_status_updated", handleStatusUpdate);
+      socket.off("waiter_called", handleWaiterCalled);
+      socket.off("waiter_resolved", handleWaiterResolved);
     };
   }, [restaurantId]);
+
+  // Resolve waiter call
+  const handleResolveWaiter = (tableId: string) => {
+    socket.emit("resolve_waiter", { restaurantId, tableId });
+    setWaiterCalls((prev) => prev.filter((call) => call.tableId !== tableId));
+  };
 
   // Auto-hide toast notification after 5 seconds
   useEffect(() => {
@@ -471,6 +500,45 @@ export default function DashboardPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Waiter Calls Notifications Panel */}
+      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        <AnimatePresence>
+          {waiterCalls.map((call) => (
+            <motion.div
+              key={call.tableId}
+              initial={{ opacity: 0, x: -100, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -100, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="bg-[#0a0f1d] border border-orange-500/40 rounded-2xl p-4 shadow-2xl shadow-orange-500/10 text-white flex items-start gap-4 pointer-events-auto"
+            >
+              <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0 animate-pulse">
+                <Users className="w-5 h-5 text-orange-500" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-extrabold text-sm text-orange-500 font-mono uppercase tracking-wider">WAITER SUMMONED</span>
+                  <span className="text-[10px] bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded-full font-bold">
+                    Table {call.tableNumber}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-350 font-light mt-1">
+                  Customer at {call.tableName || `Table ${call.tableNumber}`} requires assistance.
+                </p>
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => handleResolveWaiter(call.tableId)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded-lg text-[10px] cursor-pointer transition shadow-md shadow-orange-500/15"
+                  >
+                    Resolve (Dismiss)
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Floating Top Navbar Header (Clean floating components matching mockup) */}
       <div className="flex justify-end items-center relative z-10 py-1">
