@@ -98,7 +98,13 @@ export default function WaiterTerminalPage() {
   useEffect(() => {
     if (!restaurantId || !isOnline) return;
 
-    socket.emit("join_restaurant", restaurantId);
+    const joinRoom = () => {
+      console.log("Waiter rejoining restaurant socket room:", restaurantId);
+      socket.emit("join_restaurant", restaurantId);
+    };
+
+    joinRoom();
+    socket.on("connect", joinRoom);
 
     const handleWaiterCalled = (data: any) => {
       console.log("Waiter received live call:", data);
@@ -152,6 +158,7 @@ export default function WaiterTerminalPage() {
     socket.on("new_order", handleNewOrder);
 
     return () => {
+      socket.off("connect", joinRoom);
       socket.off("waiter_called", handleWaiterCalled);
       socket.off("waiter_claimed", handleWaiterClaimed);
       socket.off("waiter_resolved", handleWaiterResolved);
@@ -214,9 +221,9 @@ export default function WaiterTerminalPage() {
   // Compute My Tables status grid dynamically
   const tablesStatusGrid = useMemo(() => {
     return tables.map((t) => {
-      // Find active orders for this table (not served yet)
+      // Find orders for this table in the current active session
       const tableOrders = orders.filter(
-        (o) => String(o.tableNumber) === String(t.tableNumber) && o.status !== "served"
+        (o) => String(o.tableNumber) === String(t.tableNumber) && o.tableSessionId === t.currentSessionId
       );
 
       let statusLabel = "AVAILABLE";
@@ -225,11 +232,17 @@ export default function WaiterTerminalPage() {
       let description = "Available";
 
       if (tableOrders.length > 0) {
+        const allServed = tableOrders.every((o) => o.status === "served");
         const hasReady = tableOrders.some((o) => o.status === "ready");
         const hasPrep = tableOrders.some((o) => ["accepted", "preparing"].includes(o.status));
         const hasPending = tableOrders.some((o) => o.status === "pending");
 
-        if (hasReady) {
+        if (allServed) {
+          statusLabel = "EATING";
+          statusColor = "text-indigo-600 bg-indigo-50 border-indigo-100";
+          dotColor = "bg-indigo-500";
+          description = "Guests eating...";
+        } else if (hasReady) {
           statusLabel = "EATS READY";
           statusColor = "text-orange-600 bg-orange-50 border-orange-100";
           dotColor = "bg-orange-500";

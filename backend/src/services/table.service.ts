@@ -77,6 +77,7 @@ export const getTablesByRestaurant = async (
     name: table.name,
     qrCodeUrl: table.qrCodeUrl,
     isActive: table.isActive,
+    currentSessionId: table.currentSessionId,
   }));
 };
 

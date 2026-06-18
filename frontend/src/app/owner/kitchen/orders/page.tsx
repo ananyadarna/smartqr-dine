@@ -22,10 +22,13 @@ export default function KitchenOrdersPage() {
   useEffect(() => {
     loadOrders();
 
-    socket.emit(
-      "join_restaurant",
-      restaurantId
-    );
+    const joinRoom = () => {
+      console.log("Kitchen orders page rejoining restaurant socket room:", restaurantId);
+      socket.emit("join_restaurant", restaurantId);
+    };
+
+    joinRoom();
+    socket.on("connect", joinRoom);
 
     socket.on("new_order", (order) => {
       setOrders((prev) => [order, ...prev]);
@@ -48,6 +51,7 @@ export default function KitchenOrdersPage() {
     );
 
     return () => {
+      socket.off("connect", joinRoom);
       socket.off("new_order");
       socket.off(
         "order_status_updated"

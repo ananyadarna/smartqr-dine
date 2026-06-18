@@ -136,10 +136,13 @@ export default function DashboardPage() {
 
   // Handle live WebSocket updates
   useEffect(() => {
-    if (!restaurantId) return;
+    const joinRoom = () => {
+      console.log("Dashboard rejoining restaurant socket room:", restaurantId);
+      socket.emit("join_restaurant", restaurantId);
+    };
 
-    // Join the restaurant socket room
-    socket.emit("join_restaurant", restaurantId);
+    joinRoom();
+    socket.on("connect", joinRoom);
 
     // Listen for incoming orders
     const handleNewOrder = (data: any) => {
@@ -159,7 +162,6 @@ export default function DashboardPage() {
           type: "order",
           title: "New Order Received",
           message: `Order #${data.orderNumber.split("-")[1]?.slice(-6) || data.orderNumber} placed for Table ${data.tableNumber}.`,
-          timestamp: new Date(),
           read: false,
           data: data,
         },
@@ -198,7 +200,6 @@ export default function DashboardPage() {
           type: "waiter",
           title: "Waiter Summoned",
           message: `Table ${data.tableNumber} is calling for service.`,
-          timestamp: new Date(),
           read: false,
           data: data,
         },
@@ -241,6 +242,7 @@ export default function DashboardPage() {
     socket.on("waiter_resolved", handleWaiterResolved);
 
     return () => {
+      socket.off("connect", joinRoom);
       socket.off("new_order", handleNewOrder);
       socket.off("order_status_updated", handleStatusUpdate);
       socket.off("waiter_called", handleWaiterCalled);
@@ -412,15 +414,15 @@ export default function DashboardPage() {
   // Populate dynamic Floor Map grid tables (NO mock fallback fillers)
   const floorMapTables = useMemo(() => {
     return tables.map((table) => {
-      // Find if table has active orders
-      const activeOrder = recentOrders.find(
-        (o) => String(o.tableNumber) === String(table.tableNumber) && 
-               ["pending", "accepted", "preparing", "ready"].includes(o.status)
+      // Find orders for this table in the current active session
+      const tableOrders = recentOrders.filter(
+        (o) => String(o.tableNumber) === String(table.tableNumber) && o.tableSessionId === table.currentSessionId
       );
       
       let status: "occupied" | "available" | "waitlist" = "available";
-      if (activeOrder) {
-        status = activeOrder.status === "pending" ? "waitlist" : "occupied";
+      if (tableOrders.length > 0) {
+        const hasPending = tableOrders.some((o) => o.status === "pending");
+        status = hasPending ? "waitlist" : "occupied";
       }
       
       return {

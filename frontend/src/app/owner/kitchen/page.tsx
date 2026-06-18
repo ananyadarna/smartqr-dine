@@ -88,7 +88,13 @@ export default function KitchenDashboardPage() {
   useEffect(() => {
     if (!restaurantId) return;
 
-    socket.emit("join_restaurant", restaurantId);
+    const joinRoom = () => {
+      console.log("Kitchen rejoining restaurant socket room:", restaurantId);
+      socket.emit("join_restaurant", restaurantId);
+    };
+
+    joinRoom();
+    socket.on("connect", joinRoom);
 
     const handleNewOrder = (data: any) => {
       console.log("Kitchen received live order:", data);
@@ -116,6 +122,7 @@ export default function KitchenDashboardPage() {
     socket.on("waiter_resolved", handleWaiterResolved);
 
     return () => {
+      socket.off("connect", joinRoom);
       socket.off("new_order", handleNewOrder);
       socket.off("waiter_called", handleWaiterCalled);
       socket.off("waiter_resolved", handleWaiterResolved);

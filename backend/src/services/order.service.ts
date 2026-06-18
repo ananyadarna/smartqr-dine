@@ -151,6 +151,8 @@ export const getOrdersByRestaurant = async (
     orderNumber: order.orderNumber,
     tableNumber: order.tableNumber,
     tableName: order.tableName,
+    tableSessionId: order.tableSessionId,
+    tableId: order.tableId?.toString(),
     totalAmount: order.totalAmount,
     status: order.status,
     items: order.items,

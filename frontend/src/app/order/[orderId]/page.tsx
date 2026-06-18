@@ -129,7 +129,13 @@ export default function OrderPage({ params }: PageProps) {
   useEffect(() => {
     if (!order) return;
 
-    socket.emit("join_restaurant", order.restaurantId);
+    const joinRoom = () => {
+      console.log("Guest rejoining restaurant socket room:", order.restaurantId);
+      socket.emit("join_restaurant", order.restaurantId);
+    };
+
+    joinRoom();
+    socket.on("connect", joinRoom);
 
     const handleWaiterResolved = (data: any) => {
       console.log("Guest received waiter resolved:", data);
@@ -150,6 +156,7 @@ export default function OrderPage({ params }: PageProps) {
     socket.on("waiter_claimed", handleWaiterClaimed);
 
     return () => {
+      socket.off("connect", joinRoom);
       socket.off("waiter_resolved", handleWaiterResolved);
       socket.off("waiter_claimed", handleWaiterClaimed);
     };

@@ -90,6 +90,7 @@ export const getRecentOrders = async (
     orderNumber: order.orderNumber,
     tableNumber: order.tableNumber,
     tableName: order.tableName,
+    tableSessionId: order.tableSessionId,
     totalAmount: order.totalAmount,
     status: order.status,
     createdAt: order.createdAt,
