@@ -35,10 +35,29 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
 
   const [name, setName] = useState("");
+  const [subdomain, setSubdomain] = useState("");
+  const [isSubdomainCustomized, setIsSubdomainCustomized] = useState(false);
+  const [previewDomain, setPreviewDomain] = useState(".smartqr-dine.com");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(user?.email || "");
   const [address, setAddress] = useState("");
   const [theme, setTheme] = useState<ThemeType>("modern");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      if (hostname.endsWith("localhost")) {
+        setPreviewDomain(`.localhost:${window.location.port || '3000'}`);
+      } else {
+        const parts = hostname.split(".");
+        if (parts.length >= 3) {
+          setPreviewDomain(`.${parts.slice(parts.length - 2).join(".")}`);
+        } else {
+          setPreviewDomain(`.${hostname}`);
+        }
+      }
+    }
+  }, []);
 
   const themes: { id: ThemeType; label: string; desc: string; icon: any; color: string }[] = [
     { 
@@ -77,6 +96,18 @@ export default function OnboardingPage() {
         setError("Restaurant name must be at least 2 characters.");
         return;
       }
+      if (!subdomain || subdomain.trim().length < 3) {
+        setError("Subdomain must be at least 3 characters.");
+        return;
+      }
+      if (subdomain.length > 30) {
+        setError("Subdomain cannot exceed 30 characters.");
+        return;
+      }
+      if (!/^[a-z0-9-]+$/.test(subdomain)) {
+        setError("Subdomain can only contain lowercase letters, numbers, and hyphens.");
+        return;
+      }
       if (!phone || phone.trim().length < 10) {
         setError("Phone number must be at least 10 digits.");
         return;
@@ -106,6 +137,7 @@ export default function OnboardingPage() {
     try {
       const payload = {
         name,
+        subdomain,
         phone,
         email,
         address,
@@ -227,11 +259,49 @@ export default function OnboardingPage() {
                         type="text"
                         required
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          if (!isSubdomainCustomized) {
+                            const suggested = e.target.value
+                              .toLowerCase()
+                              .trim()
+                              .replace(/[^a-z0-9\s-]/g, "")
+                              .replace(/\s+/g, "-");
+                            setSubdomain(suggested.substring(0, 30));
+                          }
+                        }}
                         placeholder="Spice Garden"
                         className="w-full bg-slate-950 border border-slate-850 focus:border-orange-500 rounded-xl pl-10 pr-4 py-3 outline-none text-slate-200 transition"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Portal Subdomain
+                    </label>
+                    <div className="flex rounded-xl bg-slate-950 border border-slate-850 focus-within:border-orange-500 overflow-hidden transition">
+                      <div className="relative flex-1">
+                        <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          type="text"
+                          required
+                          value={subdomain}
+                          onChange={(e) => {
+                            setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                            setIsSubdomainCustomized(true);
+                          }}
+                          placeholder="spice-garden"
+                          className="w-full bg-transparent pl-10 pr-2 py-3 outline-none text-slate-200"
+                        />
+                      </div>
+                      <div className="bg-slate-900 border-l border-slate-850 px-4 flex items-center text-slate-500 text-xs md:text-sm font-medium select-none">
+                        {previewDomain}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-light mt-1.5 leading-normal">
+                      Only lowercase letters, numbers, and hyphens allowed. Your website and staff portals will be hosted at this address.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -420,6 +490,10 @@ export default function OnboardingPage() {
                   <div className="flex justify-between">
                     <span className="text-slate-500 font-medium">Name:</span>
                     <span className="text-slate-200 font-bold">{name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-medium">Domain:</span>
+                    <span className="text-orange-400 font-bold">{subdomain}{previewDomain}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 font-medium">Phone:</span>
