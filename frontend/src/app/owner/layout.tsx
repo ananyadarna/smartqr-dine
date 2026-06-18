@@ -20,7 +20,6 @@ import {
   X 
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
-import { applyTheme } from "@/lib/subdomain";
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -53,13 +52,6 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
 
     fetchRestaurantDetails();
   }, [hydrated, user?.restaurantId, restaurant, setRestaurant]);
-
-  // Dynamically apply active restaurant theme variables
-  useEffect(() => {
-    if (restaurant?.theme) {
-      applyTheme(restaurant.theme);
-    }
-  }, [restaurant?.theme]);
 
   // Handle hydration mismatch with Zustand persist
   useEffect(() => {
@@ -141,20 +133,12 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         <div>
           {/* Logo Brand */}
           <div className="p-6 border-b border-slate-800/60 flex items-center gap-3">
-            {restaurant?.logo ? (
-              <div className="w-10 h-10 rounded-xl bg-white border border-slate-800 p-1 flex items-center justify-center shadow-lg shrink-0 overflow-hidden">
-                <img src={restaurant.logo} alt="Logo" className="w-full h-full object-contain" />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-brand-orange flex items-center justify-center shadow-lg shadow-brand-orange/20 shrink-0">
-                <UtensilsCrossed className="w-5.5 h-5.5 text-white" />
-              </div>
-            )}
+            <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+              <UtensilsCrossed className="w-5.5 h-5.5 text-white" />
+            </div>
             <div className="overflow-hidden">
-              <span className="font-extrabold text-base tracking-tight block truncate text-white">
-                {restaurant?.name || "SmartQR Dine"}
-              </span>
-              <span className="text-xs text-brand-orange font-bold block truncate mt-0.5">Staff Portal</span>
+              <span className="font-extrabold text-lg tracking-tight block">SmartQR Dine</span>
+              <span className="text-xs text-orange-400 font-bold block truncate mt-0.5">{restaurant?.name || "Restaurant"}</span>
             </div>
           </div>
 
@@ -169,7 +153,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition ${
                     isActive 
-                      ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/15" 
+                      ? "bg-orange-500 text-white shadow-lg shadow-orange-500/15" 
                       : "text-slate-400 hover:bg-slate-900/60 hover:text-white"
                   }`}
                 >
@@ -201,31 +185,18 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
           >
             Sign Out
           </button>
-          
-          <div className="mt-4 text-[9px] text-slate-600 text-center flex items-center justify-center gap-1 font-medium border-t border-slate-800/40 pt-3.5">
-            <UtensilsCrossed className="w-3 h-3 text-slate-550 animate-pulse" />
-            <span>Powered by SmartQR Dine</span>
-          </div>
         </div>
       </aside>
 
       {/* Mobile Header & Sidebar Drawers */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-[#0a0f1d] text-white px-6 py-4 flex md:hidden justify-between items-center border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-2">
-            {restaurant?.logo ? (
-              <div className="w-7 h-7 rounded-lg bg-white border border-slate-800 p-0.5 flex items-center justify-center overflow-hidden shrink-0">
-                <img src={restaurant.logo} alt="Logo" className="w-full h-full object-contain" />
-              </div>
-            ) : (
-              <div className="w-7 h-7 rounded-lg bg-brand-orange flex items-center justify-center shrink-0">
-                <UtensilsCrossed className="w-4 h-4 text-white" />
-              </div>
-            )}
-            <span className="font-extrabold text-sm tracking-tight truncate max-w-[150px]">
-              {restaurant?.name || "SmartQR Dine"}
-            </span>
-          </div>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center">
+              <UtensilsCrossed className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-extrabold text-sm tracking-tight">SmartQR Dine</span>
+          </Link>
           
           <button 
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -258,20 +229,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
               >
                 <div>
                   <div className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-2">
-                      {restaurant?.logo ? (
-                        <div className="w-7 h-7 rounded-lg bg-white border border-slate-800 p-0.5 flex items-center justify-center overflow-hidden shrink-0">
-                          <img src={restaurant.logo} alt="Logo" className="w-full h-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="w-7 h-7 rounded-lg bg-brand-orange flex items-center justify-center shrink-0">
-                          <UtensilsCrossed className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      <span className="font-extrabold text-base tracking-tight truncate max-w-[120px]">
-                        {restaurant?.name || "SmartQR Dine"}
-                      </span>
-                    </div>
+                    <span className="font-extrabold text-lg tracking-tight">SmartQR Dine</span>
                     <button 
                       onClick={() => setMobileOpen(false)}
                       className="p-1.5 hover:bg-slate-900 rounded-lg transition"
@@ -291,7 +249,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
                           onClick={() => setMobileOpen(false)}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition ${
                             isActive 
-                              ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/15" 
+                              ? "bg-orange-500 text-white shadow-lg shadow-orange-500/15" 
                               : "text-slate-400 hover:bg-slate-900/60 hover:text-white"
                           }`}
                         >
@@ -319,11 +277,6 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
                   >
                     Sign Out
                   </button>
-                  
-                  <div className="mt-4 text-[9px] text-slate-600 text-center flex items-center justify-center gap-1 font-medium border-t border-slate-800/40 pt-3">
-                    <UtensilsCrossed className="w-3 h-3 text-slate-550 animate-pulse" />
-                    <span>Powered by SmartQR Dine</span>
-                  </div>
                 </div>
               </motion.aside>
             </>

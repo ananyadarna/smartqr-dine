@@ -23,14 +23,6 @@ export const createRestaurantSchema = z.object({
     .min(5, "Address must be at least 5 characters")
     .max(500, "Address cannot exceed 500 characters"),
 
-  subdomain: z
-    .string()
-    .trim()
-    .min(3, "Subdomain must be at least 3 characters")
-    .max(30, "Subdomain cannot exceed 30 characters")
-    .toLowerCase()
-    .regex(/^[a-z0-9-]+$/, "Subdomain can only contain lowercase letters, numbers, and hyphens"),
-
   theme: z.enum([
     "modern",
     "cafe",

@@ -3,7 +3,6 @@ import mongoose, { Document, Model } from "mongoose";
 export interface IRestaurant extends Document {
   name: string;
   slug: string;
-  subdomain: string;
   logo?: string;
   banner?: string;
   phone: string;
@@ -38,15 +37,6 @@ const restaurantSchema =
         required: true,
         unique: true,
         trim: true,
-        index: true,
-      },
-
-      subdomain: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
         index: true,
       },
 
