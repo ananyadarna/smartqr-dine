@@ -8,16 +8,44 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Lock, Mail, UtensilsCrossed } from "lucide-react";
 import { loginUser, loginWithGoogle } from "@/services/auth.service";
 import { useAuthStore } from "@/stores/auth.store";
+import { useSubdomain, applyTheme } from "@/lib/subdomain";
+import { getRestaurantBySubdomain } from "@/services/restaurant.service";
 
 export default function LoginPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth, logout } = useAuthStore();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const { subdomain, isReady } = useSubdomain();
+  const [restaurantData, setRestaurantData] = useState<any>(null);
+  const [brandingLoading, setBrandingLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (!subdomain) {
+      setBrandingLoading(false);
+      return;
+    }
+
+    const fetchBranding = async () => {
+      try {
+        const data = await getRestaurantBySubdomain(subdomain);
+        setRestaurantData(data);
+        applyTheme(data.theme);
+      } catch (err) {
+        console.error("Failed to fetch subdomain restaurant:", err);
+      } finally {
+        setBrandingLoading(false);
+      }
+    };
+
+    fetchBranding();
+  }, [subdomain, isReady]);
 
   const handleGoogleCallback = async (response: any) => {
     setLoading(true);
@@ -36,6 +64,13 @@ export default function LoginPage() {
         },
         data.token
       );
+
+      if (subdomain && restaurantData && data.user.restaurantId !== restaurantData.id) {
+        setError("You do not have permission to access this restaurant portal.");
+        logout();
+        setLoading(false);
+        return;
+      }
 
       if (data.user.restaurantId) {
         if (data.user.role === "chef") {
@@ -114,6 +149,13 @@ export default function LoginPage() {
         data.token
       );
 
+      if (subdomain && restaurantData && data.user.restaurantId !== restaurantData.id) {
+        setError("You do not have permission to access this restaurant portal.");
+        logout();
+        setLoading(false);
+        return;
+      }
+
       if (data.user.restaurantId) {
         if (data.user.role === "chef") {
           router.push("/owner/kitchen");
@@ -132,32 +174,113 @@ export default function LoginPage() {
     }
   };
 
+  if (!isReady || (subdomain && brandingLoading)) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1d] flex items-center justify-center text-white">
+        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (subdomain && !restaurantData) {
+    let rootDomain = "http://localhost:3000";
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (hostname.endsWith("localhost")) {
+        rootDomain = `http://localhost:${window.location.port || '3000'}`;
+      } else {
+        if (parts.length >= 3) {
+          const rootParts = parts.slice(1);
+          rootDomain = `https://${rootParts.join(".")}`;
+        } else {
+          rootDomain = `https://${hostname}`;
+        }
+      }
+    }
+
+    return (
+      <div className="min-h-screen bg-[#0a0f1d] flex flex-col items-center justify-center p-6 text-white text-center">
+        <div className="max-w-md bg-[#0c1224] border border-slate-800 rounded-3xl p-8 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-6">
+            <UtensilsCrossed className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-black mb-3">Restaurant Portal Not Found</h1>
+          <p className="text-slate-400 font-light text-sm leading-relaxed mb-8">
+            The requested restaurant subdomain is not registered.
+          </p>
+          <a href={rootDomain} className="w-full py-3 px-5 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center justify-center">
+            Go to SmartQR Dine Root
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
       {/* Left Panel - Brand Section */}
-      <div className="w-full md:w-1/2 bg-[#0a0f1d] flex flex-col justify-center items-center p-8 md:p-12 text-white relative overflow-hidden">
+      <div className="w-full md:w-1/2 bg-brand-navy flex flex-col justify-between items-center p-8 md:p-12 text-white relative overflow-hidden min-h-[300px] md:min-h-screen">
         {/* Decorative Grid Lines */}
         <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] bg-size-[16px_16px]"></div>
         
+        {/* Spacer for vertical flex alignment */}
+        <div className="hidden md:block"></div>
+
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center max-w-md text-center z-10"
+          className="flex flex-col items-center max-w-md text-center z-10 my-auto"
         >
-          {/* Logo Icon */}
-          <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-orange-600 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 mb-6 animate-pulse-glow">
-            <UtensilsCrossed className="w-8 h-8 text-white" />
-          </div>
-          
-          <h1 className="text-4xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-linear-to-r from-white via-slate-100 to-slate-300">
-            SmartQR Dine
-          </h1>
-          
-          <p className="text-slate-400 text-lg leading-relaxed font-light px-4">
-            The precision of a high-performance operating system, the warmth of modern hospitality.
-          </p>
+          {restaurantData ? (
+            <>
+              {/* Restaurant Logo */}
+              <div className="w-24 h-24 rounded-2xl bg-white border border-slate-800 p-2 shadow-lg mb-6 overflow-hidden flex items-center justify-center">
+                {restaurantData.logo ? (
+                  <img src={restaurantData.logo} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <UtensilsCrossed className="w-12 h-12 text-brand-orange" />
+                )}
+              </div>
+              
+              <h1 className="text-3xl font-extrabold tracking-tight mb-4 text-white">
+                {restaurantData.name}
+              </h1>
+              
+              <p className="text-slate-300 text-base leading-relaxed font-light px-4">
+                Staff & Administration Portal
+              </p>
+            </>
+          ) : (
+            <>
+              {/* Default Platform Logo */}
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-brand-orange to-amber-500 flex items-center justify-center shadow-lg shadow-brand-orange/20 mb-6 animate-pulse-glow">
+                <UtensilsCrossed className="w-8 h-8 text-white" />
+              </div>
+              
+              <h1 className="text-4xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-linear-to-r from-white via-slate-100 to-slate-300">
+                SmartQR Dine
+              </h1>
+              
+              <p className="text-slate-400 text-lg leading-relaxed font-light px-4">
+                The precision of a high-performance operating system, the warmth of modern hospitality.
+              </p>
+            </>
+          )}
         </motion.div>
+
+        {/* Subtle footer */}
+        <div className="z-10 text-[10px] text-slate-500 font-medium">
+          {restaurantData ? (
+            <span className="flex items-center gap-1">
+              <UtensilsCrossed className="w-3 h-3 animate-pulse" />
+              Powered by SmartQR Dine
+            </span>
+          ) : (
+            <span>© 2026 SmartQR Dine. All rights reserved.</span>
+          )}
+        </div>
       </div>
 
       {/* Right Panel - Form Section */}
@@ -170,10 +293,10 @@ export default function LoginPage() {
         >
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-              Welcome Back
+              {restaurantData ? "Staff Portal" : "Welcome Back"}
             </h2>
             <p className="text-slate-500 mt-2">
-              Manage your dining experience with ease.
+              {restaurantData ? `Access the admin and service panels for ${restaurantData.name}.` : "Manage your dining experience with ease."}
             </p>
           </div>
 
@@ -200,7 +323,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@restaurant.com"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white rounded-xl pl-11 pr-4 py-3 outline-none text-slate-800 transition"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange focus:bg-white rounded-xl pl-11 pr-4 py-3 outline-none text-slate-800 transition"
                 />
               </div>
             </div>
@@ -225,7 +348,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:bg-white rounded-xl pl-11 pr-10 py-3 outline-none text-slate-800 transition"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange focus:bg-white rounded-xl pl-11 pr-10 py-3 outline-none text-slate-800 transition"
                 />
                 <button
                   type="button"
@@ -240,7 +363,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold py-3.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition flex items-center justify-center gap-2"
+              className="w-full bg-brand-orange hover:bg-brand-orange-hover text-white font-semibold py-3.5 rounded-xl cursor-pointer shadow-lg shadow-brand-orange/15 transition flex items-center justify-center gap-2"
+              style={{ backgroundColor: restaurantData?.branding?.primaryColor }}
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -294,15 +418,22 @@ export default function LoginPage() {
             )}
           </div>
 
-          <div className="text-center mt-8 text-sm text-slate-500">
-            Don't have an account?{" "}
-            <Link
-              href="/auth/register"
-              className="text-orange-600 hover:text-orange-700 font-semibold transition"
-            >
-              Create Account
-            </Link>
-          </div>
+          {!restaurantData && (
+            <div className="text-center mt-8 text-sm text-slate-500">
+              Don't have an account?{" "}
+              <Link
+                href="/auth/register"
+                className="text-brand-orange hover:text-brand-orange-hover font-semibold transition"
+              >
+                Create Account
+              </Link>
+            </div>
+          )}
+          {restaurantData && (
+            <div className="text-center mt-8 text-xs text-slate-400 font-medium leading-relaxed px-4">
+              New staff member? Please contact your restaurant manager or owner to set up your account credentials.
+            </div>
+          )}
         </motion.div>
       </div>
       <Script

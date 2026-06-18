@@ -7,6 +7,12 @@ export const createRestaurant = async (
   data: CreateRestaurantInput,
   userId: string
 ) => {
+  // Check if subdomain is already taken
+  const existingSubdomain = await Restaurant.findOne({ subdomain: data.subdomain });
+  if (existingSubdomain) {
+    throw new Error("Subdomain is already taken by another restaurant");
+  }
+
   const slug =
     generateUniqueSlug(data.name);
 
@@ -28,6 +34,7 @@ export const createRestaurant = async (
     id: restaurant._id.toString(),
     name: restaurant.name,
     slug: restaurant.slug,
+    subdomain: restaurant.subdomain,
     theme: restaurant.theme,
     logo: restaurant.logo,
     banner: restaurant.banner,

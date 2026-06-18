@@ -21,8 +21,26 @@ dotenv.config();
 
 const app = express();
 
-connectDB().then(() => {
-  regenerateAllTableQRs();
+connectDB().then(async () => {
+  await regenerateAllTableQRs();
+
+  // Self-healing migration: populate subdomain from slug for legacy restaurants
+  try {
+    const { Restaurant } = await import("./models/Restaurant");
+    const restaurants = await Restaurant.find({ 
+      $or: [{ subdomain: { $exists: false } }, { subdomain: "" }] 
+    });
+    if (restaurants.length > 0) {
+      console.log(`Running database migration: Populating subdomains for ${restaurants.length} restaurants...`);
+      for (const rest of restaurants) {
+        rest.subdomain = rest.slug;
+        await rest.save();
+      }
+      console.log("Database migration completed successfully!");
+    }
+  } catch (err) {
+    console.error("Database subdomain migration failed:", err);
+  }
 });
 
 app.use(cors());

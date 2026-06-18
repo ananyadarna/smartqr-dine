@@ -1,12 +1,17 @@
 import { Router } from "express";
 
-import { getMenu } from "../controllers/public.controller";
+import { getMenu, getRestaurantBySubdomain } from "../controllers/public.controller";
 
 const router = Router();
 
 router.get(
   "/menu/:tableCode",
   getMenu
+);
+
+router.get(
+  "/restaurant/subdomain/:subdomain",
+  getRestaurantBySubdomain
 );
 
 export default router;
