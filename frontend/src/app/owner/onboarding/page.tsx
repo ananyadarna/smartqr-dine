@@ -153,25 +153,8 @@ export default function OnboardingPage() {
       // Update the user's restaurantId locally
       updateUserRestaurantId(restaurantData.id);
 
-      // Go to owner dashboard on the new subdomain
-      if (typeof window !== "undefined") {
-        const hostname = window.location.hostname;
-        const port = window.location.port;
-        const protocol = window.location.protocol;
-        
-        let targetHost = "";
-        
-        if (hostname.endsWith("localhost")) {
-          targetHost = `${subdomain}.localhost${port ? `:${port}` : ""}`;
-        } else {
-          const rootDomain = getRootDomain(hostname);
-          targetHost = `${subdomain}.${rootDomain}`;
-        }
-        
-        window.location.href = `${protocol}//${targetHost}/owner/dashboard`;
-      } else {
-        router.push("/owner/dashboard");
-      }
+      // Go to owner dashboard
+      router.push("/owner/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to create restaurant. Please check inputs.");
     } finally {
