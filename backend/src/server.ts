@@ -13,6 +13,7 @@ import qrRoutes from "./routes/qr.routes";
 import orderRoutes from "./routes/order.routes";
 import publicRoutes from "./routes/public.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import userRoutes from "./routes/user.routes";
 
 import { connectDB } from "./config/database";
 import { regenerateAllTableQRs } from "./services/qr.service";
@@ -46,6 +47,7 @@ app.use("/api/qr", qrRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 const server = http.createServer(app);
 initializeSocket(server);

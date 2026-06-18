@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BarChart3, 
+  Bell,
   ChefHat, 
   ClipboardList, 
   Menu as MenuIcon, 
@@ -62,8 +63,35 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
 
     if (!user || !user.id) {
       router.push("/auth/login");
-    } else if (!user.restaurantId && pathname !== "/owner/onboarding") {
+      return;
+    } 
+    
+    if (!user.restaurantId && pathname !== "/owner/onboarding") {
       router.push("/owner/onboarding");
+      return;
+    }
+
+    // Role-based route guarding
+    const routePermissions: Record<string, string[]> = {
+      "/owner/dashboard": ["owner", "admin"],
+      "/owner/analytics": ["owner", "admin"],
+      "/owner/menu": ["owner", "admin"],
+      "/owner/tables": ["owner", "admin"],
+      "/owner/kitchen": ["owner", "admin", "chef"],
+      "/owner/waiter": ["owner", "admin", "waiter"],
+      "/owner/settings": ["owner", "admin", "chef", "waiter"],
+    };
+
+    const allowedRoles = routePermissions[pathname];
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      console.warn(`Access denied to ${pathname} for role: ${user.role}. Redirecting...`);
+      if (user.role === "chef") {
+        router.push("/owner/kitchen");
+      } else if (user.role === "waiter") {
+        router.push("/owner/waiter");
+      } else {
+        router.push("/owner/dashboard");
+      }
     }
   }, [user, hydrated, pathname, router]);
 
@@ -85,13 +113,18 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   };
 
   const navItems = [
-    { label: "Dashboard", href: "/owner/dashboard", icon: ClipboardList },
-    { label: "Live Kitchen", href: "/owner/kitchen", icon: ChefHat },
-    { label: "Menu Architect", href: "/owner/menu", icon: Store },
-    { label: "Tables & QRs", href: "/owner/tables", icon: TableProperties },
-    { label: "Analytics Insights", href: "/owner/analytics", icon: BarChart3 },
-    { label: "Settings", href: "/owner/settings", icon: Settings },
+    { label: "Dashboard", href: "/owner/dashboard", icon: ClipboardList, allowedRoles: ["owner", "admin"] },
+    { label: "Live Kitchen", href: "/owner/kitchen", icon: ChefHat, allowedRoles: ["owner", "admin", "chef"] },
+    { label: "Waiter Terminal", href: "/owner/waiter", icon: Bell, allowedRoles: ["owner", "admin", "waiter"] },
+    { label: "Menu Architect", href: "/owner/menu", icon: Store, allowedRoles: ["owner", "admin"] },
+    { label: "Tables & QRs", href: "/owner/tables", icon: TableProperties, allowedRoles: ["owner", "admin"] },
+    { label: "Analytics Insights", href: "/owner/analytics", icon: BarChart3, allowedRoles: ["owner", "admin"] },
+    { label: "Settings", href: "/owner/settings", icon: Settings, allowedRoles: ["owner", "admin", "chef", "waiter"] },
   ];
+
+  const allowedNavItems = navItems.filter(item => 
+    item.allowedRoles.includes(user?.role || "")
+  );
 
   return (
     <div className="h-screen flex bg-slate-50 text-slate-800 overflow-hidden">
@@ -111,7 +144,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
 
           {/* Navigation Links */}
           <nav className="p-4 space-y-1.5">
-            {navItems.map((item) => {
+            {allowedNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
@@ -206,7 +239,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
                   </div>
 
                   <nav className="space-y-1.5">
-                    {navItems.map((item) => {
+                    {allowedNavItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = pathname === item.href;
                       return (

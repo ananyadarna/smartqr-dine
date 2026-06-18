@@ -38,7 +38,13 @@ export default function LoginPage() {
       );
 
       if (data.user.restaurantId) {
-        router.push("/owner/dashboard");
+        if (data.user.role === "chef") {
+          router.push("/owner/kitchen");
+        } else if (data.user.role === "waiter") {
+          router.push("/owner/waiter");
+        } else {
+          router.push("/owner/dashboard");
+        }
       } else {
         router.push("/owner/onboarding");
       }
@@ -109,7 +115,13 @@ export default function LoginPage() {
       );
 
       if (data.user.restaurantId) {
-        router.push("/owner/dashboard");
+        if (data.user.role === "chef") {
+          router.push("/owner/kitchen");
+        } else if (data.user.role === "waiter") {
+          router.push("/owner/waiter");
+        } else {
+          router.push("/owner/dashboard");
+        }
       } else {
         router.push("/owner/onboarding");
       }

@@ -211,6 +211,17 @@ export default function DashboardPage() {
       });
     };
 
+    // Listen for waiter claim from other devices
+    const handleWaiterClaimed = (data: any) => {
+      setWaiterCalls((prev) =>
+        prev.map((call) =>
+          call.tableId === data.tableId 
+            ? { ...call, claimedBy: data.waiterName } 
+            : call
+        )
+      );
+    };
+
     // Listen for waiter resolution from other devices
     const handleWaiterResolved = (data: any) => {
       setWaiterCalls((prev) => prev.filter((call) => call.tableId !== data.tableId));
@@ -226,12 +237,14 @@ export default function DashboardPage() {
     socket.on("new_order", handleNewOrder);
     socket.on("order_status_updated", handleStatusUpdate);
     socket.on("waiter_called", handleWaiterCalled);
+    socket.on("waiter_claimed", handleWaiterClaimed);
     socket.on("waiter_resolved", handleWaiterResolved);
 
     return () => {
       socket.off("new_order", handleNewOrder);
       socket.off("order_status_updated", handleStatusUpdate);
       socket.off("waiter_called", handleWaiterCalled);
+      socket.off("waiter_claimed", handleWaiterClaimed);
       socket.off("waiter_resolved", handleWaiterResolved);
     };
   }, [restaurantId]);
@@ -581,6 +594,11 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-xs text-slate-350 font-light mt-1">
                   Customer at {call.tableName || `Table ${call.tableNumber}`} requires assistance.
+                  {call.claimedBy && (
+                    <span className="block text-[10px] text-orange-400 font-bold mt-1.5 uppercase tracking-wider animate-pulse">
+                      Claimed by {call.claimedBy}
+                    </span>
+                  )}
                 </p>
                 <div className="pt-2 flex justify-end">
                   <button

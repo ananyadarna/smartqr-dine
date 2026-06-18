@@ -52,6 +52,7 @@ export default function OrderPage({ params }: PageProps) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [waiterCalled, setWaiterCalled] = useState(false);
+  const [waiterClaimedBy, setWaiterClaimedBy] = useState<string | null>(null);
   const [tableOrders, setTableOrders] = useState<any[]>([]);
 
   // Fetch initial order details
@@ -124,7 +125,7 @@ export default function OrderPage({ params }: PageProps) {
     };
   }, [order, tableOrders]);
 
-  // Handle waiter resolved events and join socket room
+  // Handle waiter resolved/claimed events and join socket room
   useEffect(() => {
     if (!order) return;
 
@@ -134,13 +135,23 @@ export default function OrderPage({ params }: PageProps) {
       console.log("Guest received waiter resolved:", data);
       if (data.tableId === order.tableId) {
         setWaiterCalled(false);
+        setWaiterClaimedBy(null);
+      }
+    };
+
+    const handleWaiterClaimed = (data: any) => {
+      console.log("Guest received waiter claimed:", data);
+      if (data.tableId === order.tableId) {
+        setWaiterClaimedBy(data.waiterName);
       }
     };
 
     socket.on("waiter_resolved", handleWaiterResolved);
+    socket.on("waiter_claimed", handleWaiterClaimed);
 
     return () => {
       socket.off("waiter_resolved", handleWaiterResolved);
+      socket.off("waiter_claimed", handleWaiterClaimed);
     };
   }, [order]);
 
@@ -631,7 +642,11 @@ export default function OrderPage({ params }: PageProps) {
             <div>
               <h4 className="font-bold text-xs">Waiter Summoned for Table {order.tableNumber}!</h4>
               <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
-                A dining host will be at your table shortly.
+                {waiterClaimedBy ? (
+                  <span className="text-orange-400 font-extrabold">Waiter {waiterClaimedBy} is on the way!</span>
+                ) : (
+                  "A dining host will be at your table shortly."
+                )}
               </p>
             </div>
           </motion.div>

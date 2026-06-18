@@ -63,3 +63,16 @@ export const protect = async (
     });
   }
 };
+
+export const restrictTo = (...allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    if (!user || !allowedRoles.includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden: You do not have permission to perform this action.",
+      });
+    }
+    next();
+  };
+};

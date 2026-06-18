@@ -28,6 +28,11 @@ export const initializeSocket = (
       io.to(data.restaurantId).emit("waiter_called", data);
     });
 
+    // Claim waiter call channel
+    socket.on("claim_waiter", (data: { restaurantId: string; tableId: string; waiterName: string }) => {
+      io.to(data.restaurantId).emit("waiter_claimed", data);
+    });
+
     // Resolve waiter notification channel
     socket.on("resolve_waiter", (data: { restaurantId: string; tableId: string }) => {
       io.to(data.restaurantId).emit("waiter_resolved", data);

@@ -129,23 +129,18 @@ export default function KitchenDashboardPage() {
 
   // Progress order status
   const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
-    let nextStatus: "accepted" | "preparing" | "ready" | "served" = "accepted";
+    let nextStatus: "accepted" | "preparing" | "ready" = "accepted";
     
     if (currentStatus === "pending") nextStatus = "accepted";
     else if (currentStatus === "accepted") nextStatus = "preparing";
     else if (currentStatus === "preparing") nextStatus = "ready";
-    else if (currentStatus === "ready") nextStatus = "served";
+    else return;
 
     try {
       const data = await updateOrderStatus(orderId, nextStatus);
       
       // Update locally
-      if (nextStatus === "served") {
-        // Remove served orders from screen
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      } else {
-        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: data.status } : o)));
-      }
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: data.status } : o)));
     } catch (err) {
       console.error("Failed to update order status:", err);
     }
@@ -374,24 +369,28 @@ function KitchenOrderCard({ order, onAction }: { order: any; onAction: (id: stri
       )}
 
       {/* Action Stepper Button */}
-      <button
-        onClick={() => onAction(order.id, order.status)}
-        className={`w-full py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm hover:shadow transition flex items-center justify-center gap-1.5 ${
-          isPending 
-            ? "bg-red-500 hover:bg-red-600 text-white" 
-            : isAccepted
-              ? "bg-orange-500 hover:bg-orange-600 text-white"
-              : isPreparing
-                ? "bg-amber-500 hover:bg-amber-600 text-white"
-                : "bg-emerald-500 hover:bg-emerald-600 text-white"
-        }`}
-      >
-        <Play className="w-3.5 h-3.5" />
-        {isPending && "Accept Order"}
-        {isAccepted && "Start Cooking"}
-        {isPreparing && "Order Ready"}
-        {isReady && "Serve & Complete"}
-      </button>
+      {isReady ? (
+        <div className="w-full py-2.5 rounded-xl font-bold text-xs bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center gap-1.5 cursor-not-allowed">
+          <FolderCheck className="w-3.5 h-3.5" />
+          Awaiting Waiter pickup
+        </div>
+      ) : (
+        <button
+          onClick={() => onAction(order.id, order.status)}
+          className={`w-full py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm hover:shadow transition flex items-center justify-center gap-1.5 ${
+            isPending 
+              ? "bg-red-500 hover:bg-red-600 text-white" 
+              : isAccepted
+                ? "bg-orange-500 hover:bg-orange-600 text-white"
+                : "bg-amber-500 hover:bg-amber-600 text-white"
+          }`}
+        >
+          <Play className="w-3.5 h-3.5" />
+          {isPending && "Accept Order"}
+          {isAccepted && "Start Cooking"}
+          {isPreparing && "Mark Ready"}
+        </button>
+      )}
     </motion.div>
   );
 }
