@@ -3,6 +3,54 @@
 import { useEffect, useState } from "react";
 
 /**
+ * Resolves the root domain name for the application.
+ * If on localhost, returns "localhost".
+ * Otherwise, returns "smartqr-dine.com" (or the configured NEXT_PUBLIC_ROOT_DOMAIN).
+ */
+export function getRootDomain(hostname: string): string {
+  if (!hostname) return "smartqr-dine.com";
+  if (hostname.endsWith("localhost")) {
+    return "localhost";
+  }
+
+  // Use configuration variable if set
+  const rootDomainEnv = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+  if (rootDomainEnv) {
+    return rootDomainEnv.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
+  }
+
+  let cleanHost = hostname.toLowerCase();
+  if (cleanHost.startsWith("www.")) {
+    cleanHost = cleanHost.substring(4);
+  }
+
+  // Hardcoded checks for platform domains to prevent slicing off project names
+  if (cleanHost.includes("smartqr-dine.com")) {
+    return "smartqr-dine.com";
+  }
+  if (cleanHost.includes("smartqr-dine.vercel.app")) {
+    return "smartqr-dine.vercel.app";
+  }
+
+  const parts = cleanHost.split(".");
+
+  // Handle vercel.app deployments (e.g. aha.vercel.app)
+  if (cleanHost.endsWith(".vercel.app")) {
+    if (parts.length > 3) {
+      return parts.slice(parts.length - 3).join(".");
+    }
+    return cleanHost;
+  }
+
+  // Standard domains
+  if (parts.length >= 3) {
+    return parts.slice(parts.length - 2).join(".");
+  }
+
+  return cleanHost;
+}
+
+/**
  * Extracts the subdomain from a given hostname.
  * Returns null if it is the root domain, www, localhost, or an IP address.
  */
@@ -25,31 +73,29 @@ export function getSubdomain(hostname: string): string | null {
   const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
   if (ipRegex.test(hostname)) return null;
 
-  // Split by '.'
-  const parts = hostname.split(".");
-
-  // If there are at least 3 parts, the first part is the subdomain
-  // e.g., bistro.smartqr-dine.com -> parts = ['bistro', 'smartqr-dine', 'com']
-  // We ignore 'www' as a subdomain.
-  if (parts.length >= 3) {
-    // If the hostname ends with a known development domain like vercel.app, we should handle it.
-    // e.g. if we are on smartqr-dine.vercel.app, parts.length is 3, parts[0] is 'smartqr-dine'.
-    // In that case, we should treat smartqr-dine.vercel.app as the root domain (no subdomain).
-    const mainDomainIndex = hostname.indexOf("smartqr-dine");
-    if (mainDomainIndex !== -1) {
-      // Find the part that contains smartqr-dine
-      const rootIndex = parts.findIndex(p => p.includes("smartqr-dine"));
-      if (rootIndex > 0) {
-        const sub = parts[0];
-        if (sub === "www") return null;
-        return sub.toLowerCase();
-      }
-      return null;
+  // Handle vercel.app deployments for testing/staging support
+  if (hostname.endsWith(".vercel.app")) {
+    const parts = hostname.split(".");
+    if (parts.length > 3) {
+      // e.g. bistro.aha.vercel.app -> parts = ['bistro', 'aha', 'vercel', 'app']
+      const sub = parts[0];
+      if (sub === "www") return null;
+      return sub.toLowerCase();
     }
+    return null;
+  }
 
-    const sub = parts[0];
-    if (sub === "www") return null;
-    return sub.toLowerCase();
+  const rootDomain = getRootDomain(hostname);
+  if (!rootDomain || hostname === rootDomain || hostname === `www.${rootDomain}`) {
+    return null;
+  }
+
+  if (hostname.endsWith(rootDomain)) {
+    // Extract the subdomain prefix
+    const sub = hostname.substring(0, hostname.length - rootDomain.length - 1);
+    const cleanSub = sub.replace(/\.$/, "");
+    if (cleanSub === "www") return null;
+    return cleanSub.toLowerCase();
   }
 
   return null;

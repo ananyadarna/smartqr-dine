@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { createRestaurant } from "@/services/restaurant.service";
 import { useAuthStore } from "@/stores/auth.store";
+import { getRootDomain } from "@/lib/subdomain";
 
 type ThemeType = "modern" | "cafe" | "luxury" | "fastfood";
 
@@ -49,12 +50,8 @@ export default function OnboardingPage() {
       if (hostname.endsWith("localhost")) {
         setPreviewDomain(`.localhost:${window.location.port || '3000'}`);
       } else {
-        const parts = hostname.split(".");
-        if (parts.length >= 3) {
-          setPreviewDomain(`.${parts.slice(parts.length - 2).join(".")}`);
-        } else {
-          setPreviewDomain(`.${hostname}`);
-        }
+        const root = getRootDomain(hostname);
+        setPreviewDomain(`.${root}`);
       }
     }
   }, []);
