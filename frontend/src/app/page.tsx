@@ -213,12 +213,12 @@ export default function LandingPage() {
             : "bg-transparent py-6"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition">
-              <UtensilsCrossed className="w-5 h-5 text-white" />
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
+          <Link href="/" className="flex items-center gap-2 md:gap-3 group">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition">
+              <UtensilsCrossed className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </div>
-            <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-linear-to-r from-white to-slate-300">
+            <span className="font-extrabold text-base md:text-xl tracking-tight bg-clip-text text-transparent bg-linear-to-r from-white to-slate-300">
               SmartQR Dine
             </span>
           </Link>
@@ -229,26 +229,26 @@ export default function LandingPage() {
             <a href="#pricing" className="hover:text-white transition">Pricing</a>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {user ? (
               <Link 
                 href={user.restaurantId ? "/owner/dashboard" : "/owner/onboarding"}
-                className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold px-5 py-2.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition flex items-center gap-1.5"
+                className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold px-3 py-2 md:px-5 md:py-2.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition flex items-center gap-1 md:gap-1.5 text-xs md:text-sm"
               >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
+                Dashboard
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             ) : (
               <>
                 <Link 
                   href="/auth/login" 
-                  className="text-slate-300 hover:text-white font-semibold px-4 py-2 transition"
+                  className="text-slate-350 hover:text-white font-semibold px-2 py-2 md:px-4 md:py-2 transition text-xs md:text-sm"
                 >
                   Sign In
                 </Link>
                 <Link 
                   href="/auth/register"
-                  className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold px-5 py-2.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition"
+                  className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold px-3 py-2 md:px-5 md:py-2.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition text-xs md:text-sm"
                 >
                   Get Started
                 </Link>
@@ -339,7 +339,7 @@ export default function LandingPage() {
             </div>
             
             {/* Internal layout mockup */}
-            <div className="aspect-video w-full rounded-lg bg-[#0c1224] border border-slate-800/50 flex overflow-hidden relative">
+            <div className="h-[380px] md:h-auto md:aspect-video w-full rounded-lg bg-[#0c1224] border border-slate-800/50 flex overflow-hidden relative">
               {/* Sidebar Mockup */}
               <div className="w-48 border-r border-slate-800/60 p-4 hidden md:flex flex-col justify-between shrink-0 bg-slate-950/40">
                 <div className="space-y-4">
@@ -365,47 +365,47 @@ export default function LandingPage() {
               </div>
               
               {/* Content Panel Mockup */}
-              <div className="flex-1 p-6 flex flex-col justify-between text-left relative overflow-hidden">
+              <div className="flex-1 p-4 md:p-6 flex flex-col justify-between text-left relative overflow-hidden">
                 <div className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-extrabold text-white tracking-tight">Performance Overview</h4>
-                    <p className="text-[10px] text-slate-500 font-medium">Real-time insights for Today, Oct 24th.</p>
+                  <div className="space-y-0.5 md:space-y-1">
+                    <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight">Performance Overview</h4>
+                    <p className="text-[8px] md:text-[10px] text-slate-500 font-medium">Real-time insights for Today, Oct 24th.</p>
                   </div>
-                  <div className="h-7 px-3 bg-orange-500/15 border border-orange-500/35 rounded-full flex items-center justify-center text-[9px] font-bold text-orange-400">
+                  <div className="h-6 md:h-7 px-2 md:px-3 bg-orange-500/15 border border-orange-500/35 rounded-full flex items-center justify-center text-[7px] md:text-[9px] font-bold text-orange-400">
                     Live Room Connected
                   </div>
                 </div>
 
                 {/* Metrics Cards row */}
-                <div className="grid grid-cols-3 gap-4 my-4">
-                  <div className="border border-slate-800/80 bg-slate-950/40 p-3.5 rounded-xl space-y-1 cursor-default hover:border-slate-700/55 transition">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Total Revenue</span>
-                    <span className="text-sm font-black text-slate-200">
+                <div className="grid grid-cols-3 gap-2 md:gap-4 my-3 md:my-4">
+                  <div className="border border-slate-800/80 bg-slate-950/40 p-2.5 md:p-3.5 rounded-xl space-y-0.5 md:space-y-1 cursor-default hover:border-slate-700/55 transition">
+                    <span className="text-[7px] md:text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Total Revenue</span>
+                    <span className="text-xs md:text-sm font-black text-slate-200">
                       ₹{(4280 + (ordersToday - 141) * 320).toLocaleString()}
                     </span>
                   </div>
-                  <div className="border border-slate-800/80 bg-slate-950/40 p-3.5 rounded-xl space-y-1 cursor-default hover:border-slate-700/55 transition relative overflow-hidden">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Orders Today</span>
+                  <div className="border border-slate-800/80 bg-slate-950/40 p-2.5 md:p-3.5 rounded-xl space-y-0.5 md:space-y-1 cursor-default hover:border-slate-700/55 transition relative overflow-hidden">
+                    <span className="text-[7px] md:text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Orders Today</span>
                     <motion.span 
                       key={ordersToday}
                       initial={{ scale: 1.2, color: "#f97316" }}
                       animate={{ scale: 1, color: "#e2e8f0" }}
-                      className="text-sm font-black text-slate-200 block"
+                      className="text-xs md:text-sm font-black text-slate-200 block"
                     >
                       {ordersToday}
                     </motion.span>
                   </div>
-                  <div className="border border-slate-800/80 bg-slate-950/40 p-3.5 rounded-xl space-y-1 cursor-default hover:border-slate-700/55 transition">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Avg. Turn Time</span>
-                    <span className="text-sm font-black text-slate-200">12m</span>
+                  <div className="border border-slate-800/80 bg-slate-950/40 p-2.5 md:p-3.5 rounded-xl space-y-0.5 md:space-y-1 cursor-default hover:border-slate-700/55 transition">
+                    <span className="text-[7px] md:text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Avg. Turn Time</span>
+                    <span className="text-xs md:text-sm font-black text-slate-200">12m</span>
                   </div>
                 </div>
 
                 {/* Dynamic Active Orders List */}
-                <div className="flex-1 border border-slate-800 bg-slate-950/25 rounded-xl p-4 flex flex-col justify-start overflow-hidden relative">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Active Kitchen Orders</span>
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <div className="flex-1 border border-slate-800 bg-slate-950/25 rounded-xl p-3 md:p-4 flex flex-col justify-start overflow-hidden relative">
+                  <div className="flex justify-between items-center mb-2 md:mb-3">
+                    <span className="text-[8px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Active Kitchen Orders</span>
+                    <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></span>
                   </div>
                   
                   <div className="space-y-2.5">
