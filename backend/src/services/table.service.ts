@@ -51,13 +51,17 @@ export const getTablesByRestaurant = async (
   restaurantId: string,
   userId: string
 ) => {
-  const restaurant = await Restaurant.findOne({
+  let restaurant = await Restaurant.findOne({
     _id: restaurantId,
     createdBy: userId,
   });
 
   if (!restaurant) {
-    throw new Error("Restaurant not found");
+    const { User } = await import("../models/User");
+    const user = await User.findOne({ _id: userId, restaurantId });
+    if (!user) {
+      throw new Error("Restaurant not found");
+    }
   }
 
   const tables = await Table.find({
@@ -90,13 +94,17 @@ export const updateTable = async (
     throw new Error("Table not found");
   }
 
-  const restaurant = await Restaurant.findOne({
+  let restaurant = await Restaurant.findOne({
     _id: table.restaurantId,
     createdBy: userId,
   });
 
   if (!restaurant) {
-    throw new Error("Unauthorized");
+    const { User } = await import("../models/User");
+    const user = await User.findOne({ _id: userId, restaurantId: table.restaurantId });
+    if (!user || !["owner", "admin"].includes(user.role)) {
+      throw new Error("Unauthorized");
+    }
   }
 
   Object.assign(table, data);
@@ -122,13 +130,17 @@ export const deleteTable = async (
     throw new Error("Table not found");
   }
 
-  const restaurant = await Restaurant.findOne({
+  let restaurant = await Restaurant.findOne({
     _id: table.restaurantId,
     createdBy: userId,
   });
 
   if (!restaurant) {
-    throw new Error("Unauthorized");
+    const { User } = await import("../models/User");
+    const user = await User.findOne({ _id: userId, restaurantId: table.restaurantId });
+    if (!user || !["owner", "admin"].includes(user.role)) {
+      throw new Error("Unauthorized");
+    }
   }
 
   await Table.findByIdAndDelete(tableId);
@@ -146,13 +158,17 @@ export const clearTableSession = async (
     throw new Error("Table not found");
   }
 
-  const restaurant = await Restaurant.findOne({
+  let restaurant = await Restaurant.findOne({
     _id: table.restaurantId,
     createdBy: userId,
   });
 
   if (!restaurant) {
-    throw new Error("Unauthorized");
+    const { User } = await import("../models/User");
+    const user = await User.findOne({ _id: userId, restaurantId: table.restaurantId });
+    if (!user || !["owner", "admin"].includes(user.role)) {
+      throw new Error("Unauthorized");
+    }
   }
 
   // Set a fresh session ID

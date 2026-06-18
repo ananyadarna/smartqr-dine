@@ -66,10 +66,19 @@ export const getRestaurantById = async (
   restaurantId: string,
   userId: string
 ) => {
-  const restaurant = await Restaurant.findOne({
+  let restaurant = await Restaurant.findOne({
     _id: restaurantId,
     createdBy: userId,
   });
+
+  if (!restaurant) {
+    const { User } = await import("../models/User");
+    const user = await User.findOne({ _id: userId, restaurantId });
+    if (!user) {
+      throw new Error("Restaurant not found");
+    }
+    restaurant = await Restaurant.findById(restaurantId);
+  }
 
   if (!restaurant) {
     throw new Error("Restaurant not found");
